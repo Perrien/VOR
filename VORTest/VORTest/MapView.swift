@@ -36,6 +36,7 @@ struct MapView: View {
 
     // Which object layers are visible.
     @State private var showVORs: Bool = true
+    @State private var visibleVORServiceVolumes: Set<VORServiceVolume> = Set(VORServiceVolume.allCases)
     @State private var showAirports: Bool = true
     @State private var showRadials: Bool = true
     // The station whose map details are currently expanded.
@@ -102,7 +103,9 @@ struct MapView: View {
                     .background(Color(red: 0.10, green: 0.11, blue: 0.13))
                 }
 
-                MapControlPanel(zoom: $zoom, showVORs: $showVORs, showAirports: $showAirports, showRadials: $showRadials,
+                MapControlPanel(zoom: $zoom, showVORs: $showVORs,
+                                visibleVORServiceVolumes: $visibleVORServiceVolumes,
+                                showAirports: $showAirports, showRadials: $showRadials,
                                 zoomRange: minZoom...maxZoom,
                                 planePosition: Binding(get: { normalizedPlanePosition }, set: { _ in }))
                     .frame(width: controlPanelWidth)
@@ -137,26 +140,28 @@ struct MapView: View {
             // Marker layer: constant size, manually transformed to track the map.
             if showVORs {
                 ForEach(stations) { station in
-                    let stationPoint = point(for: station, in: imageRect)
-                    let screenStationPoint = screenPoint(stationPoint, mapSize: mapSize)
-                    let showsCompassRose = selectedVORID == station.id && zoom >= compassRoseMinZoom
+                    if visibleVORServiceVolumes.contains(station.serviceVolume) {
+                        let stationPoint = point(for: station, in: imageRect)
+                        let screenStationPoint = screenPoint(stationPoint, mapSize: mapSize)
+                        let showsCompassRose = selectedVORID == station.id && zoom >= compassRoseMinZoom
 
-                    if selectedVORID == station.id {
-                        VORServiceRangeRing(radius: serviceRangeRadius(for: station, imageRect: imageRect) * zoom)
-                            .position(screenStationPoint)
-                    }
-
-                    if showsCompassRose {
-                        CompassRoseView()
-                            .position(screenStationPoint)
-                    }
-
-                    VORStationView(station: station, isSelected: selectedVORID == station.id)
-                        .position(screenStationPoint)
-                        .onTapGesture {
-                            selectedVORID = selectedVORID == station.id ? nil : station.id
+                        if selectedVORID == station.id {
+                            VORServiceRangeRing(radius: serviceRangeRadius(for: station, imageRect: imageRect) * zoom)
+                                .position(screenStationPoint)
                         }
-                }
+
+                        if showsCompassRose {
+                            CompassRoseView()
+                                .position(screenStationPoint)
+                        }
+
+                        VORStationView(station: station, isSelected: selectedVORID == station.id)
+                            .position(screenStationPoint)
+                            .onTapGesture {
+                                selectedVORID = selectedVORID == station.id ? nil : station.id
+                            }
+                        }
+                    }
             }
 
             if showAirports {
@@ -346,6 +351,7 @@ private func normalize180(_ angle: Double) -> Double {
 struct MapControlPanel: View {
     @Binding var zoom: CGFloat
     @Binding var showVORs: Bool
+    @Binding var visibleVORServiceVolumes: Set<VORServiceVolume>
     @Binding var showAirports: Bool
     @Binding var showRadials: Bool
     let zoomRange: ClosedRange<CGFloat>
@@ -381,6 +387,24 @@ struct MapControlPanel: View {
                 Toggle("VORs", isOn: $showVORs)
                     .toggleStyle(.checkbox)
                     .foregroundStyle(.white)
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(VORServiceVolume.allCases, id: \.self) { serviceVolume in
+                        Toggle(serviceVolume.displayName,
+                               isOn: Binding(
+                                get: { visibleVORServiceVolumes.contains(serviceVolume) },
+                                set: { isVisible in
+                                    if isVisible {
+                                        visibleVORServiceVolumes.insert(serviceVolume)
+                                    } else {
+                                        visibleVORServiceVolumes.remove(serviceVolume)
+                                    }
+                                }
+                               ))
+                            .toggleStyle(.checkbox)
+                            .foregroundStyle(.white)
+                    }
+                }
+                .padding(.leading, 18)
                 Toggle("Airports", isOn: $showAirports)
                     .toggleStyle(.checkbox)
                     .foregroundStyle(.white)

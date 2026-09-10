@@ -9,17 +9,26 @@ enum VORType: String, Decodable {
 }
 
 /// The standard service volume assigned to a VOR station.
-enum VORServiceVolume: String, Decodable {
-    case terminal = "T"
-    case low = "L"
+enum VORServiceVolume: String, Decodable, CaseIterable, Hashable {
     case high = "H"
+    case low = "L"
+    case terminal = "T"
+
+    /// Human-readable category label used by the map layer controls.
+    var displayName: String {
+        switch self {
+        case .high: return "High"
+        case .low: return "Low"
+        case .terminal: return "Terminal"
+        }
+    }
 
     /// Maximum reception distance for this service volume, in nautical miles.
     var rangeNM: Double {
         switch self {
-        case .terminal: return 25
         case .low: return 40
         case .high: return 100
+        case .terminal: return 25
         }
     }
 }
@@ -141,4 +150,3 @@ struct CDIReading {
 
     static let off = CDIReading(deflection: 0, flag: .off)
 }
-
