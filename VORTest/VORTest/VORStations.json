@@ -1,0 +1,57 @@
+[
+  {
+    "id": "westmarch",
+    "name": "Westmarch",
+    "identifier": "WES",
+    "frequency": 113.20,
+    "location": { "x": 0.16, "y": 0.46 },
+    "type": "VOR",
+    "serviceVolume": "H",
+    "elevationFT": 220,
+    "dme": false
+  },
+  {
+    "id": "central",
+    "name": "Central",
+    "identifier": "CTR",
+    "frequency": 116.80,
+    "location": { "x": 0.47, "y": 0.50 },
+    "type": "VOR",
+    "serviceVolume": "H",
+    "elevationFT": 1450,
+    "dme": false
+  },
+  {
+    "id": "northgate",
+    "name": "Northgate",
+    "identifier": "NOR",
+    "frequency": 109.60,
+    "location": { "x": 0.58, "y": 0.22 },
+    "type": "VOR",
+    "serviceVolume": "H",
+    "elevationFT": 780,
+    "dme": false
+  },
+  {
+    "id": "eastridge",
+    "name": "Eastridge",
+    "identifier": "EST",
+    "frequency": 114.50,
+    "location": { "x": 0.79, "y": 0.44 },
+    "type": "VOR",
+    "serviceVolume": "H",
+    "elevationFT": 2100,
+    "dme": false
+  },
+  {
+    "id": "southford",
+    "name": "Southford",
+    "identifier": "SUD",
+    "frequency": 112.10,
+    "location": { "x": 0.46, "y": 0.73 },
+    "type": "VOR",
+    "serviceVolume": "H",
+    "elevationFT": 310,
+    "dme": false
+  }
+]
