@@ -42,6 +42,81 @@ struct FlatMap: View {
     }
 }
 
+/// A pointy-top hexagonal grid sized in nautical miles and aligned with the map.
+/// `hexHeightNM` is the tip-to-tip height of each hexagon.
+struct HexGridOverlay: View {
+    let hexHeightNM: Double
+    let imageRect: CGRect
+    let mapSize: CGSize
+    let zoom: CGFloat
+    let pan: CGSize
+    let mapWidthNM: Double
+
+    var body: some View {
+        Canvas { context, _ in
+            guard hexHeightNM > 0, imageRect.width > 0, mapWidthNM > 0 else { return }
+
+            let pixelsPerNM = imageRect.width / CGFloat(mapWidthNM)
+            let hexHeight = CGFloat(hexHeightNM) * pixelsPerNM
+            let hexRadius = hexHeight / 2
+            let hexWidth = sqrt(3) * hexRadius
+            let rowSpacing = hexHeight * 0.75
+            guard hexWidth > 0, rowSpacing > 0 else { return }
+
+            let rowStart = imageRect.minY - hexHeight
+            let rowCount = Int(ceil((imageRect.height + 2 * hexHeight) / rowSpacing)) + 1
+            let columnStart = imageRect.minX - hexWidth
+            let columnCount = Int(ceil((imageRect.width + 2 * hexWidth) / hexWidth)) + 1
+
+            for row in 0..<rowCount {
+                let y = rowStart + CGFloat(row) * rowSpacing
+                let xOffset = row.isMultiple(of: 2) ? 0 : hexWidth / 2
+
+                for column in 0..<columnCount {
+                    let center = CGPoint(
+                        x: columnStart + CGFloat(column) * hexWidth + xOffset,
+                        y: y
+                    )
+                    context.stroke(hexPath(center: center, radius: hexRadius),
+                                   with: .color(.white.opacity(0.2)),
+                                   lineWidth: 0.8)
+                }
+            }
+        }
+        .frame(width: mapSize.width, height: mapSize.height)
+        .allowsHitTesting(false)
+    }
+
+    private func hexPath(center: CGPoint, radius: CGFloat) -> Path {
+        var path = Path()
+        for vertex in 0..<6 {
+            let angle = Double(vertex) * .pi / 3 - .pi / 2
+            let mapPoint = CGPoint(
+                x: center.x + cos(angle) * radius,
+                y: center.y + sin(angle) * radius
+            )
+            let point = screenPoint(mapPoint)
+            if vertex == 0 {
+                path.move(to: point)
+            } else {
+                path.addLine(to: point)
+            }
+        }
+        path.closeSubpath()
+        return path
+    }
+
+    /// Applies the same camera transform as the map artwork and other overlays.
+    private func screenPoint(_ point: CGPoint) -> CGPoint {
+        let centerX = mapSize.width / 2
+        let centerY = mapSize.height / 2
+        return CGPoint(
+            x: (point.x - centerX) * zoom + centerX + pan.width,
+            y: (point.y - centerY) * zoom + centerY + pan.height
+        )
+    }
+}
+
 /// A radial from a tuned VOR: `origin` is the station's on-screen point and
 /// `courseDegrees` is the selected OBS course (0 = north, clockwise).
 struct Radial: Identifiable {
@@ -92,11 +167,11 @@ struct VORStationView: View {
         // The symbol is the positioned view, so its center (the station's dot) sits
         // exactly on the map anchor — and radial lines originate there. The label
         // floats below as an overlay so it doesn't shift that center.
-        VORSymbol(type: station.type, size: 38)
+        VORSymbol(type: station.type, size: symbolSize, color: symbolColor)
             .overlay(alignment: .top) {
                 if isSelected {
                     VStack(spacing: 2) {
-                        Text(station.name)
+                        Text("\(station.name) (\(station.serviceVolume.rawValue))")
                         Text("\(station.ident) - \(station.frequencyLabel)")
                     }
                     .font(.caption2.monospacedDigit())
@@ -105,11 +180,27 @@ struct VORStationView: View {
                     .padding(.vertical, 4)
                     .background(.black.opacity(0.65), in: RoundedRectangle(cornerRadius: 5))
                     .fixedSize()
-                    .offset(y: 42)
+                    .offset(y: symbolSize + 4)
                     .allowsHitTesting(false)
                 }
             }
             .contentShape(VORHexagon())
+    }
+
+    private var symbolColor: Color {
+        switch station.serviceVolume {
+        case .high: return .black
+        case .low: return .mint
+        case .terminal: return .white
+        }
+    }
+
+    private var symbolSize: CGFloat {
+        switch station.serviceVolume {
+        case .high: return 45
+        case .low: return 35
+        case .terminal: return 25
+        }
     }
 }
 

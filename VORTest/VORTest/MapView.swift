@@ -28,6 +28,10 @@ struct MapView: View {
     // The plane's magnetic heading (0–360°, 0 = north/up).
     @State private var heading: Double = 0
 
+    // The plane's true airspeed in knots and whether the flight loop is running.
+    @State private var speedKnots: Double = 120
+    @State private var isFlying: Bool = false
+
     // Map camera: zoom factor and pan offset (in screen points, applied to the
     // scaled map content). `panStart` snapshots the offset when a pan begins.
     @State private var zoom: CGFloat = 1
@@ -39,6 +43,8 @@ struct MapView: View {
     @State private var visibleVORServiceVolumes: Set<VORServiceVolume> = Set(VORServiceVolume.allCases)
     @State private var showAirports: Bool = true
     @State private var showRadials: Bool = true
+    @State private var showGrid: Bool = false
+    @State private var gridSizeNM: Double = 50
     // The station whose map details are currently expanded.
     @State private var selectedVORID: String?
 
@@ -80,7 +86,9 @@ struct MapView: View {
                     mapArea(mapSize: mapSize, imageRect: imageRect, planePos: planePos)
 
                     HStack(spacing: 16) {
-                        PlaneControlView(heading: $heading)
+                        PlaneControlView(heading: $heading,
+                                         speedKnots: $speedKnots,
+                                         isFlying: $isFlying)
 
                         NavRadioView(
                             name: "NAV1",
@@ -106,6 +114,7 @@ struct MapView: View {
                 MapControlPanel(zoom: $zoom, showVORs: $showVORs,
                                 visibleVORServiceVolumes: $visibleVORServiceVolumes,
                                 showAirports: $showAirports, showRadials: $showRadials,
+                                showGrid: $showGrid, gridSizeNM: $gridSizeNM,
                                 zoomRange: minZoom...maxZoom,
                                 planePosition: Binding(get: { normalizedPlanePosition }, set: { _ in }))
                     .frame(width: controlPanelWidth)
@@ -129,6 +138,15 @@ struct MapView: View {
                 .frame(width: mapSize.width, height: mapSize.height)
                 .scaleEffect(zoom)
                 .offset(pan)
+
+            if showGrid {
+                HexGridOverlay(hexHeightNM: gridSizeNM,
+                               imageRect: imageRect,
+                               mapSize: mapSize,
+                               zoom: zoom,
+                               pan: pan,
+                               mapWidthNM: mapWidthNM)
+            }
 
             // Radial lines from tuned stations, drawn beneath the station symbols.
             if showRadials {
@@ -175,6 +193,14 @@ struct MapView: View {
                 .position(screenPoint(planePos, mapSize: mapSize))
                 // The plane's own drag wins over panning when the drag starts on it.
                 .highPriorityGesture(planeDrag(planePos: planePos, mapSize: mapSize))
+
+            FlightTimerView(planePosition: $planePosition,
+                            heading: $heading,
+                            speedKnots: $speedKnots,
+                            isFlying: $isFlying,
+                            initialPosition: planePos,
+                            mapSize: mapSize,
+                            pixelsPerNM: pixelsPerNM(in: imageRect))
         }
         .frame(width: mapSize.width, height: mapSize.height)
         .clipped()
@@ -189,6 +215,12 @@ struct MapView: View {
     }
 
     private let mapSpace = "mapArea"
+
+    /// The chart's horizontal scale, shared by reception math and flight movement.
+    private func pixelsPerNM(in imageRect: CGRect) -> CGFloat {
+        guard imageRect.width > 0 else { return 0 }
+        return imageRect.width / CGFloat(mapWidthNM)
+    }
 
     /// The radials to draw for the currently tuned radios, in screen space.
     private func tunedRadials(planePos: CGPoint, imageRect: CGRect, mapSize: CGSize) -> [Radial] {
@@ -287,7 +319,7 @@ struct MapView: View {
     /// change the simulated distance.
     private func distanceNM(from planePoint: CGPoint, to stationPoint: CGPoint, imageRect: CGRect) -> Double {
         guard imageRect.width > 0 else { return .infinity }
-        let pixelsPerNM = imageRect.width / CGFloat(mapWidthNM)
+        let pixelsPerNM = self.pixelsPerNM(in: imageRect)
         return hypot(Double(planePoint.x - stationPoint.x),
                      Double(planePoint.y - stationPoint.y)) / Double(pixelsPerNM)
     }
@@ -337,6 +369,60 @@ struct MapView: View {
     }
 }
 
+/// Advances the plane while flight is enabled. The bindings keep the loop tied
+/// to the latest heading and speed even while the controls are being edited.
+private struct FlightTimerView: View {
+    @Binding var planePosition: CGPoint?
+    @Binding var heading: Double
+    @Binding var speedKnots: Double
+    @Binding var isFlying: Bool
+
+    let initialPosition: CGPoint
+    let mapSize: CGSize
+    let pixelsPerNM: CGFloat
+
+    var body: some View {
+        Color.clear
+            .frame(width: 0, height: 0)
+            .task(id: isFlying) {
+                await runFlightLoop()
+            }
+    }
+
+    private func runFlightLoop() async {
+        guard isFlying else { return }
+
+        var lastUpdate = Date()
+        while !Task.isCancelled {
+            try? await Task.sleep(nanoseconds: 16_000_000)
+            guard !Task.isCancelled else { return }
+
+            let now = Date()
+            let elapsed = min(max(now.timeIntervalSince(lastUpdate), 0), 0.1)
+            lastUpdate = now
+            advancePlane(by: elapsed)
+        }
+    }
+
+    private func advancePlane(by elapsed: TimeInterval) {
+        guard pixelsPerNM > 0 else { return }
+
+        let distanceNM = max(0, speedKnots) * elapsed / 3_600
+        let radians = heading * .pi / 180
+        let currentPosition = planePosition ?? initialPosition
+        let distanceInPoints = CGFloat(distanceNM) * pixelsPerNM
+        let proposed = CGPoint(
+            x: currentPosition.x + sin(radians) * distanceInPoints,
+            y: currentPosition.y - cos(radians) * distanceInPoints
+        )
+
+        planePosition = CGPoint(
+            x: min(max(proposed.x, 0), mapSize.width),
+            y: min(max(proposed.y, 0), mapSize.height)
+        )
+    }
+}
+
 /// Wraps an angle to the range −180…180.
 private func normalize180(_ angle: Double) -> Double {
     var result = angle.truncatingRemainder(dividingBy: 360)
@@ -354,10 +440,13 @@ struct MapControlPanel: View {
     @Binding var visibleVORServiceVolumes: Set<VORServiceVolume>
     @Binding var showAirports: Bool
     @Binding var showRadials: Bool
+    @Binding var showGrid: Bool
+    @Binding var gridSizeNM: Double
     let zoomRange: ClosedRange<CGFloat>
 
     // Added optional planePosition binding to show normalized plane coordinates
     var planePosition: Binding<CGPoint?>?
+    @State private var gridSizeText: String = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
@@ -411,6 +500,28 @@ struct MapControlPanel: View {
                 Toggle("Radials", isOn: $showRadials)
                     .toggleStyle(.checkbox)
                     .foregroundStyle(.white)
+                HStack(spacing: 8) {
+                    Toggle("Grid", isOn: $showGrid)
+                        .toggleStyle(.checkbox)
+                        .foregroundStyle(.white)
+
+                    TextField("50", text: $gridSizeText)
+                        .textFieldStyle(.plain)
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.white)
+                        .frame(width: 42)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 3)
+                        .background(Color.black.opacity(0.5), in: RoundedRectangle(cornerRadius: 5))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 5)
+                                .stroke(.white.opacity(0.15), lineWidth: 1)
+                        )
+
+                    Text("NM")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
             }
             
             // Insert the Plane position section here
@@ -442,6 +553,25 @@ struct MapControlPanel: View {
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(red: 0.13, green: 0.14, blue: 0.17))
+        .onAppear {
+            gridSizeText = formattedGridSize(gridSizeNM)
+        }
+        .onChange(of: gridSizeText) { _, newValue in
+            let filtered = newValue.filter { $0.isNumber }
+            if filtered != newValue {
+                gridSizeText = filtered
+            }
+            if let size = Double(filtered), size > 0 {
+                gridSizeNM = size
+            }
+        }
+        .onSubmit {
+            gridSizeText = formattedGridSize(gridSizeNM)
+        }
+    }
+
+    private func formattedGridSize(_ size: Double) -> String {
+        String(format: "%.0f", size)
     }
 }
 

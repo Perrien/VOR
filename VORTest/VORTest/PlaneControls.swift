@@ -5,6 +5,10 @@ import SwiftUI
 /// plane icon on the map both follow `heading`.
 struct PlaneControlView: View {
     @Binding var heading: Double
+    @Binding var speedKnots: Double
+    @Binding var isFlying: Bool
+
+    @State private var speedText: String = ""
 
     // How fast the turn buttons rotate the plane, in degrees per second.
     private let turnRate: Double = 10
@@ -46,10 +50,61 @@ struct PlaneControlView: View {
                 }
                 .offset(x: radius - 6, y: radius - 6)
             }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("SPEED")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 4) {
+                    TextField("120", text: $speedText)
+                        .textFieldStyle(.plain)
+                        .font(.title2.monospacedDigit().weight(.medium))
+                        .foregroundStyle(.green)
+                        .frame(width: 62)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 4)
+                        .background(Color.black.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(.white.opacity(0.15), lineWidth: 1)
+                        )
+
+                    Text("KTS")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+
+                Button {
+                    isFlying.toggle()
+                } label: {
+                    Label(isFlying ? "Pause" : "Play",
+                          systemImage: isFlying ? "pause.fill" : "play.fill")
+                        .frame(minWidth: 82)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(isFlying ? .orange : .green)
+                .keyboardShortcut(.space, modifiers: [])
+            }
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.black.opacity(0.35), in: RoundedRectangle(cornerRadius: 10))
+        .onAppear {
+            speedText = formattedSpeed(speedKnots)
+        }
+        .onChange(of: speedText) { _, newValue in
+            let filtered = newValue.filter { $0.isNumber }
+            if filtered != newValue {
+                speedText = filtered
+            }
+            if let speed = Double(filtered) {
+                speedKnots = max(0, speed)
+            }
+        }
+        .onSubmit {
+            speedText = formattedSpeed(speedKnots)
+        }
     }
 
     /// The heading rounded to whole degrees for display (360 instead of 0).
@@ -63,6 +118,10 @@ struct PlaneControlView: View {
         var next = (heading + delta).truncatingRemainder(dividingBy: 360)
         if next < 0 { next += 360 }
         heading = next
+    }
+
+    private func formattedSpeed(_ speed: Double) -> String {
+        String(format: "%.0f", speed)
     }
 }
 
