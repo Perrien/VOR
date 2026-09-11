@@ -1,5 +1,16 @@
 import SwiftUI
 
+enum ControlPalette {
+    static let panelBackground = Color(red: 0.88, green: 0.89, blue: 0.91)
+    static let cardBackground = Color(red: 0.95, green: 0.96, blue: 0.97)
+    static let fieldBackground = Color.white.opacity(0.82)
+    static let primaryText = Color(red: 0.12, green: 0.14, blue: 0.16)
+    static let secondaryText = Color(red: 0.32, green: 0.35, blue: 0.38)
+    static let accent = Color(red: 0.00, green: 0.36, blue: 0.25)
+    static let divider = Color.black.opacity(0.16)
+    static let fieldBorder = Color.black.opacity(0.22)
+}
+
 /// The plane control panel: a heading indicator flanked by press-and-hold turn
 /// buttons. Holding a button rotates the plane continuously; the readout and the
 /// plane icon on the map both follow `heading`.
@@ -20,15 +31,15 @@ struct PlaneControlView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text("PLANE")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(ControlPalette.accent)
 
                 Text("HDG")
                     .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(ControlPalette.accent)
 
                 Text(String(format: "%03d°", displayHeading))
                     .font(.title2.monospacedDigit().weight(.medium))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(ControlPalette.accent)
                     .lineLimit(1)
                     .fixedSize()
 
@@ -54,25 +65,25 @@ struct PlaneControlView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("SPEED")
                     .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(ControlPalette.secondaryText)
 
                 HStack(spacing: 4) {
                     TextField("120", text: $speedText)
                         .textFieldStyle(.plain)
                         .font(.title2.monospacedDigit().weight(.medium))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(ControlPalette.accent)
                         .frame(width: 62)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 4)
-                        .background(Color.black.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
+                        .background(ControlPalette.fieldBackground, in: RoundedRectangle(cornerRadius: 6))
                         .overlay(
                             RoundedRectangle(cornerRadius: 6)
-                                .stroke(.white.opacity(0.15), lineWidth: 1)
+                                .stroke(ControlPalette.fieldBorder, lineWidth: 1)
                         )
 
                     Text("KTS")
                         .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(ControlPalette.secondaryText)
                 }
 
                 Button {
@@ -89,7 +100,7 @@ struct PlaneControlView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.black.opacity(0.35), in: RoundedRectangle(cornerRadius: 10))
+        .background(ControlPalette.cardBackground, in: RoundedRectangle(cornerRadius: 10))
         .onAppear {
             speedText = formattedSpeed(speedKnots)
         }
@@ -222,38 +233,38 @@ struct NavRadioView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text(name)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(ControlPalette.secondaryText)
 
                 Text("IDENT")
                     .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(ControlPalette.secondaryText)
 
                 TextField("---", text: identText)
                     .textFieldStyle(.plain)
                     .autocorrectionDisabled()
                     .font(.title2.monospaced().weight(.semibold))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(ControlPalette.accent)
                     .frame(width: 88)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.black.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
+                    .background(ControlPalette.fieldBackground, in: RoundedRectangle(cornerRadius: 6))
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
-                            .stroke(isTuned ? Color.green.opacity(0.7) : Color.white.opacity(0.15), lineWidth: 1)
+                            .stroke(isTuned ? ControlPalette.accent.opacity(0.7) : ControlPalette.fieldBorder, lineWidth: 1)
                     )
 
                 Text(tunedStation.map { "\($0.frequencyLabel) MHz" } ?? "--- MHz")
                     .font(.caption.monospacedDigit())
-                    .foregroundStyle(isTuned ? .green : .secondary)
+                    .foregroundStyle(isTuned ? ControlPalette.accent : ControlPalette.secondaryText)
 
                 Label(isTuned ? "Station tuned" : "No station",
                       systemImage: isTuned ? "dot.radiowaves.left.and.right" : "antenna.radiowaves.left.and.right.slash")
                     .font(.caption2)
-                    .foregroundStyle(isTuned ? .cyan : .secondary)
+                    .foregroundStyle(isTuned ? Color(red: 0.00, green: 0.38, blue: 0.48) : ControlPalette.secondaryText)
 
                 Text(String(format: "CRS %03d°", displayCourse))
                     .font(.caption.monospacedDigit())
-                    .foregroundStyle(.white)
+                    .foregroundStyle(ControlPalette.primaryText)
 
                 Spacer(minLength: 0)
             }
@@ -262,7 +273,7 @@ struct NavRadioView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.black.opacity(0.35), in: RoundedRectangle(cornerRadius: 10))
+        .background(ControlPalette.cardBackground, in: RoundedRectangle(cornerRadius: 10))
     }
 
     /// The OBS course rounded to whole degrees for display (360 instead of 0).
@@ -278,6 +289,86 @@ struct NavRadioView: View {
             get: { ident },
             set: { ident = String($0.uppercased().prefix(3)) }
         )
+    }
+
+}
+
+/// Edits the angular deviation represented by full-scale CDI deflection.
+struct CDIMaxField: View {
+    @Binding var value: Double
+    @State private var text: String = ""
+
+    private var isValid: Bool {
+        guard let number = Double(text) else { return false }
+        return number > 0 && number < 90
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("CDI max")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(ControlPalette.primaryText)
+
+            HStack(spacing: 8) {
+                TextField("10", text: $text)
+                    .textFieldStyle(.plain)
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(ControlPalette.primaryText)
+                    .frame(width: 42)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 3)
+                    .background(ControlPalette.fieldBackground, in: RoundedRectangle(cornerRadius: 5))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(isValid ? ControlPalette.fieldBorder : Color.red.opacity(0.8), lineWidth: 1)
+                        )
+
+                Text("degrees")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(ControlPalette.primaryText)
+            }
+
+            Text("Enter a value greater than 0 and less than 90")
+                .font(.caption2)
+                .foregroundStyle(isValid ? ControlPalette.secondaryText : Color.red)
+        }
+        .onAppear {
+            text = formatted(value)
+        }
+        .onChange(of: text) { _, newValue in
+            let filtered = sanitized(newValue)
+            if filtered != newValue {
+                text = filtered
+                return
+            }
+
+            if let number = Double(filtered), number > 0, number < 90 {
+                value = number
+            }
+        }
+        .onSubmit {
+            text = formatted(value)
+        }
+    }
+
+    private func sanitized(_ input: String) -> String {
+        var output = ""
+        var hasDecimal = false
+
+        for character in input {
+            if character.isNumber {
+                output.append(character)
+            } else if character == "." && !hasDecimal {
+                output.append(character)
+                hasDecimal = true
+            }
+        }
+
+        return output
+    }
+
+    private func formatted(_ number: Double) -> String {
+        number.rounded() == number ? String(format: "%.0f", number) : String(format: "%.2f", number)
     }
 }
 

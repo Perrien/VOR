@@ -27,6 +27,9 @@ struct MapView: View {
     @State private var nav1OBS: Double = 0
     @State private var nav2OBS: Double = 0
 
+    // The maximum angular deviation represented by full-scale CDI deflection.
+    @State private var cdiMax: Double = 10
+
     // The plane's magnetic heading (0–360°, 0 = north/up).
     @State private var heading: Double = 0
 
@@ -98,20 +101,20 @@ struct MapView: View {
                             ident: $nav1Ident,
                             obs: $nav1OBS,
                             tunedStation: nav1Station,
-                            reading: { obs in cdiReading(station: nav1Station, obs: obs, planePos: planePos, imageRect: imageRect) }
+                            reading: { obs in cdiReading(station: nav1Station, obs: obs, cdiMax: cdiMax, planePos: planePos, imageRect: imageRect) }
                         )
                         NavRadioView(
                             name: "NAV2",
                             ident: $nav2Ident,
                             obs: $nav2OBS,
                             tunedStation: nav2Station,
-                            reading: { obs in cdiReading(station: nav2Station, obs: obs, planePos: planePos, imageRect: imageRect) }
+                            reading: { obs in cdiReading(station: nav2Station, obs: obs, cdiMax: cdiMax, planePos: planePos, imageRect: imageRect) }
                         )
                     }
                     .padding(16)
                     .frame(height: panelHeight)
                     .frame(maxWidth: .infinity)
-                    .background(Color(red: 0.10, green: 0.11, blue: 0.13))
+                    .background(ControlPalette.panelBackground)
                 }
 
                 MapControlPanel(zoom: $zoom, showVORs: $showVORs,
@@ -119,6 +122,7 @@ struct MapView: View {
                                 showAirports: $showAirports, showRadials: $showRadials,
                                 showGrid: $showGrid, showSightseeingRegions: $showSightseeingRegions,
                                 gridSizeNM: $gridSizeNM,
+                                cdiMax: $cdiMax,
                                 zoomRange: minZoom...maxZoom,
                                 planePosition: Binding(get: { normalizedPlanePosition }, set: { _ in }))
                     .frame(width: controlPanelWidth)
@@ -369,7 +373,8 @@ struct MapView: View {
 
     /// Computes the CDI needle deflection and TO/FROM flag for a radio tuned to
     /// `station` with the OBS set to `obs`, given the plane's position.
-    private func cdiReading(station: VORStation?, obs: Double, planePos: CGPoint, imageRect: CGRect) -> CDIReading {
+    private func cdiReading(station: VORStation?, obs: Double, cdiMax: Double,
+                            planePos: CGPoint, imageRect: CGRect) -> CDIReading {
         guard let station else { return .off }
 
         let stationPoint = point(for: station, in: imageRect)
@@ -385,7 +390,7 @@ struct MapView: View {
         let diff = normalize180(radial - obs)
         let flag: CDIReading.Flag = abs(diff) <= 90 ? .from : .to
 
-        // Angular deviation from the selected course line (0–90°), full scale at 10°.
+        // Angular deviation from the selected course line (0–90°), full scale at cdiMax.
         let deviationAngle = flag == .from ? abs(diff) : 180 - abs(diff)
 
         // Which side of the course line the plane sits on decides needle direction:
@@ -394,7 +399,7 @@ struct MapView: View {
         let planeIsRightOfCourse = (vx * cos(obsRad) + vy * sin(obsRad)) > 0
         let sign: Double = planeIsRightOfCourse ? -1 : 1
 
-        let deflection = sign * min(deviationAngle, 10) / 10
+        let deflection = sign * min(deviationAngle, cdiMax) / cdiMax
         return CDIReading(deflection: deflection, flag: flag)
     }
 }
@@ -473,6 +478,7 @@ struct MapControlPanel: View {
     @Binding var showGrid: Bool
     @Binding var showSightseeingRegions: Bool
     @Binding var gridSizeNM: Double
+    @Binding var cdiMax: Double
     let zoomRange: ClosedRange<CGFloat>
 
     // Added optional planePosition binding to show normalized plane coordinates
@@ -483,30 +489,33 @@ struct MapControlPanel: View {
         VStack(alignment: .leading, spacing: 22) {
             Text("Map")
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(ControlPalette.accent)
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Zoom")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(ControlPalette.primaryText)
                     Spacer()
                     Text(String(format: "%.1f×", zoom))
                         .font(.caption.monospacedDigit())
-                        .foregroundStyle(.white)
+                        .foregroundStyle(ControlPalette.primaryText)
                 }
                 Slider(value: $zoom, in: zoomRange)
+                    .tint(ControlPalette.accent)
             }
 
-            Divider().overlay(Color.white.opacity(0.12))
+            CDIMaxField(value: $cdiMax)
+
+            Divider().overlay(ControlPalette.divider)
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("Layers")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(ControlPalette.secondaryText)
                 Toggle("VORs", isOn: $showVORs)
                     .toggleStyle(.checkbox)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(ControlPalette.primaryText)
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(VORServiceVolume.allCases, id: \.self) { serviceVolume in
                         Toggle(serviceVolume.displayName,
@@ -519,42 +528,42 @@ struct MapControlPanel: View {
                                         visibleVORServiceVolumes.remove(serviceVolume)
                                     }
                                 }
-                               ))
+                            ))
                             .toggleStyle(.checkbox)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(ControlPalette.primaryText)
                     }
                 }
                 .padding(.leading, 18)
                 Toggle("Airports", isOn: $showAirports)
                     .toggleStyle(.checkbox)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(ControlPalette.primaryText)
                 Toggle("Sightseeing regions", isOn: $showSightseeingRegions)
                     .toggleStyle(.checkbox)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(ControlPalette.primaryText)
                 Toggle("Radials", isOn: $showRadials)
                     .toggleStyle(.checkbox)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(ControlPalette.primaryText)
                 HStack(spacing: 8) {
                     Toggle("Grid", isOn: $showGrid)
                         .toggleStyle(.checkbox)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(ControlPalette.primaryText)
 
                     TextField("50", text: $gridSizeText)
                         .textFieldStyle(.plain)
                         .font(.caption.monospacedDigit())
-                        .foregroundStyle(.white)
+                        .foregroundStyle(ControlPalette.primaryText)
                         .frame(width: 42)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 3)
-                        .background(Color.black.opacity(0.5), in: RoundedRectangle(cornerRadius: 5))
+                        .background(ControlPalette.fieldBackground, in: RoundedRectangle(cornerRadius: 5))
                         .overlay(
                             RoundedRectangle(cornerRadius: 5)
-                                .stroke(.white.opacity(0.15), lineWidth: 1)
+                                .stroke(ControlPalette.fieldBorder, lineWidth: 1)
                         )
 
                     Text("NM")
                         .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(ControlPalette.primaryText)
                 }
             }
             
@@ -563,21 +572,21 @@ struct MapControlPanel: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Plane position")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(ControlPalette.secondaryText)
                     if let rel = planePosition.wrappedValue {
                         Text(String(format: "X: %.4f", rel.x))
                             .font(.caption.monospacedDigit())
-                            .foregroundStyle(.white)
+                            .foregroundStyle(ControlPalette.primaryText)
                         Text(String(format: "Y: %.4f", rel.y))
                             .font(.caption.monospacedDigit())
-                            .foregroundStyle(.white)
+                            .foregroundStyle(ControlPalette.primaryText)
                     } else {
                         Text("X: --")
                             .font(.caption.monospacedDigit())
-                            .foregroundStyle(.white)
+                            .foregroundStyle(ControlPalette.primaryText)
                         Text("Y: --")
                             .font(.caption.monospacedDigit())
-                            .foregroundStyle(.white)
+                            .foregroundStyle(ControlPalette.primaryText)
                     }
                 }
             }
@@ -586,7 +595,8 @@ struct MapControlPanel: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color(red: 0.13, green: 0.14, blue: 0.17))
+        .background(ControlPalette.panelBackground)
+        .tint(ControlPalette.accent)
         .onAppear {
             gridSizeText = formattedGridSize(gridSizeNM)
         }
