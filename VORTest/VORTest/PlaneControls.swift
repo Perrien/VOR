@@ -385,7 +385,13 @@ struct OBSInstrument: View {
     @State private var lastDragAngle: Double?
 
     private var radius: CGFloat { diameter / 2 }
-    private var maxDeflection: CGFloat { radius * 0.6 }
+    /// The outer two CDI reference marks are full-scale deflection. Keeping the
+    /// scale and needle tied to this value means the needle ends on a mark.
+    private var fullScaleDeflection: CGFloat { diameter * 0.25 }
+    private var cdiTickSpacing: CGFloat { fullScaleDeflection / 5 }
+    /// The clear centre of the instrument. The CDI needle is clipped to this
+    /// circle so a full-scale deflection cannot cross the compass card.
+    private var cdiViewportDiameter: CGFloat { diameter * 0.60 }
 
     var body: some View {
         ZStack {
@@ -401,16 +407,16 @@ struct OBSInstrument: View {
             // Fixed instrument face: deviation scale, needle, TO/FROM.
             deviationScale
             if reading.flag != .off {
-                cdiNeedle
-                toFromIndicator
+                maskedCDINeedle
             } else {
                 navFlag
             }
+            toFromIndicator
 
             // Fixed course index at the top.
             Image(systemName: "arrowtriangle.down.fill")
                 .foregroundStyle(.yellow)
-                .font(.system(size: 16))
+                .font(.system(size: 14))
                 .offset(y: -radius + 10)
 
             // OBS knob (decorative — the whole dial is draggable).
@@ -429,52 +435,87 @@ struct OBSInstrument: View {
 
     // MARK: Fixed overlay pieces
 
-    /// The horizontal row of deviation dots the needle is read against.
+    /// Five evenly spaced deviation marks. The end marks are full-scale CDI
+    /// deflection, so the needle has a visible, reachable stop at each end.
     private var deviationScale: some View {
-        HStack(spacing: (maxDeflection - 6) / 2) {
-            ForEach(-2...2, id: \.self) { index in
-                Circle()
-                    .stroke(.white.opacity(0.7), lineWidth: index == 0 ? 0 : 1.5)
-                    .background(index == 0 ? Circle().stroke(.white, lineWidth: 1.5) : nil)
-                    .frame(width: index == 0 ? 14 : 8, height: index == 0 ? 14 : 8)
+        ZStack {
+            ForEach(-5...5, id: \.self) { index in
+                Capsule()
+                    .fill(.white.opacity(index == 0 ? 1 : 0.8))
+                    .frame(width: index == 0 ? 3 : 2,
+                           height: index == 0 ? 12 : 8)
+                    .offset(x: CGFloat(index) * cdiTickSpacing)
             }
         }
+        .frame(width: fullScaleDeflection * 2 + 8, height: 14)
     }
 
-    /// The vertical CDI needle, offset horizontally by the deflection.
+    /// The white CDI needle moves across the five marks and stops on either
+    /// full-scale end mark.
     private var cdiNeedle: some View {
-        Capsule()
-            .fill(.yellow)
-            .frame(width: 4, height: diameter * 0.62)
-            .offset(x: CGFloat(reading.deflection) * maxDeflection)
+        let clampedDeflection = min(max(reading.deflection, -1), 1)
+
+        return Capsule()
+            .fill(.white)
+            .frame(width: 3, height: cdiViewportDiameter)
+            .offset(x: CGFloat(clampedDeflection) * fullScaleDeflection)
             .animation(.easeOut(duration: 0.15), value: reading.deflection)
     }
 
-    /// The TO or FROM triangle, whichever is active.
-    private var toFromIndicator: some View {
-        Group {
-            if reading.flag == .to {
-                Image(systemName: "arrowtriangle.up.fill")
-                    .foregroundStyle(.white)
-                    .offset(y: -radius * 0.42)
-            } else if reading.flag == .from {
-                Image(systemName: "arrowtriangle.down.fill")
-                    .foregroundStyle(.white)
-                    .offset(y: radius * 0.42)
-            }
+    /// Restricts the CDI needle to the centre of the instrument, without
+    /// introducing a visible border or guide circle.
+    private var maskedCDINeedle: some View {
+        ZStack {
+            cdiNeedle
         }
-        .font(.system(size: 15))
+        .frame(width: cdiViewportDiameter, height: cdiViewportDiameter)
+        .clipShape(Circle())
     }
 
-    /// Shown when no valid station is tuned — the "unreliable signal" flag.
+    /// TO and FR remain in place on every state. Their separate placements
+    /// mirror the upper and lower labels on the reference instrument.
+    private var toFromIndicator: some View {
+        let labelX = radius * 0.22
+        let labelDistance = radius * 0.42
+        let markerDistance: CGFloat = 14
+
+        return ZStack {
+            flagText("TO")
+                .offset(x: labelX, y: -labelDistance)
+            flagMarker(systemImage: "arrowtriangle.up.fill", isActive: reading.flag == .to)
+                .offset(x: labelX, y: -labelDistance + markerDistance)
+
+            flagMarker(systemImage: "arrowtriangle.down.fill", isActive: reading.flag == .from)
+                .offset(x: labelX, y: labelDistance - markerDistance)
+            flagText("FR")
+                .offset(x: labelX, y: labelDistance)
+        }
+    }
+
+    private func flagText(_ label: String) -> some View {
+        Text(label)
+            .font(.system(size: 10, weight: .bold, design: .monospaced))
+            .foregroundStyle(.white.opacity(0.85))
+    }
+
+    private func flagMarker(systemImage: String, isActive: Bool) -> some View {
+        Image(systemName: systemImage)
+            .font(.system(size: 14, weight: .bold))
+            .foregroundStyle(.yellow)
+            .opacity(isActive ? 1 : 0)
+            .frame(width: 16, height: 16)
+    }
+
+    /// Shown when no valid station is tuned. It occupies the open upper-left
+    /// portion of the face, leaving the TO/FR indication clear on the right.
     private var navFlag: some View {
         Text("NAV")
-            .font(.system(size: 11, weight: .heavy))
+            .font(.system(size: 10, weight: .heavy))
             .foregroundStyle(.white)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 2)
+            .padding(.horizontal, 2)
+            .padding(.vertical, 1)
             .background(.red, in: RoundedRectangle(cornerRadius: 3))
-            .offset(x: radius * 0.32, y: -radius * 0.32)
+            .offset(x: -radius * 0.30, y: -radius * 0.27)
     }
 
     // MARK: Rotational drag
@@ -510,17 +551,17 @@ struct CompassCard: View {
                 let isMajor = i % 3 == 0
                 Rectangle()
                     .fill(.white)
-                    .frame(width: isMajor ? 2 : 1, height: isMajor ? 12 : 7)
-                    .offset(y: -radius + 8)
+                    .frame(width: isMajor ? 2 : 1, height: isMajor ? 10 : 5)
+                    .offset(y: -radius + 7)
                     .rotationEffect(.degrees(Double(i) * 10))
             }
 
             // Heading numbers (N, 3, 6, E, 12, 15, S, 21, 24, W, 30, 33).
             ForEach(0..<12, id: \.self) { i in
                 Text(label(for: i))
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(.white)
-                    .offset(y: -radius + 28)
+                    .offset(y: -radius + 22)
                     .rotationEffect(.degrees(Double(i) * 30))
             }
         }
