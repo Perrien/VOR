@@ -140,6 +140,77 @@ struct Airport: Identifiable, Decodable {
     }
 }
 
+/// A named sightseeing feature with a map label and one or more checkpoints that
+/// can later be used as the mission's arrival requirements.
+struct SightseeingRegion: Identifiable, Decodable {
+    enum FeatureType: String, Decodable {
+        case bay
+        case beach
+        case bight
+        case cove
+        case inlet
+        case island
+        case lake
+        case mountain
+        case peak
+    }
+
+    /// A point relative to the map image, with each component in 0...1.
+    struct Point: Decodable {
+        let x: Double
+        let y: Double
+
+        var relativePosition: CGPoint {
+            CGPoint(x: x, y: y)
+        }
+    }
+
+    /// A checkpoint relative to the map image, with each component in 0...1.
+    struct Checkpoint: Identifiable, Decodable {
+        /// Stable identifier within the sightseeing feature.
+        let id: String
+        let x: Double
+        let y: Double
+        /// Distance from the checkpoint that counts as visiting it.
+        let toleranceNM: Double
+
+        var relativePosition: CGPoint {
+            CGPoint(x: x, y: y)
+        }
+    }
+
+    /// Stable identifier used by future missions.
+    let id: String
+    /// Name shown on the map and in future sightseeing missions.
+    let name: String
+    /// Geographic category used by future mission and label styling.
+    let type: FeatureType
+    /// Position for the always-visible map label.
+    let label: Point
+    /// Checkpoints required for the feature and future mission arrival checks.
+    let checkpoints: [Checkpoint]
+
+    var labelPosition: CGPoint { label.relativePosition }
+
+    /// The fixed set of named sightseeing regions on Myosia.
+    static let myosia: [SightseeingRegion] = loadFromBundle()
+
+    /// Loads the regions from the bundled SightseeingRegions.json file.
+    private static func loadFromBundle() -> [SightseeingRegion] {
+        guard let url = Bundle.main.url(forResource: "SightseeingRegions", withExtension: "json") else {
+            assertionFailure("SightseeingRegions.json is missing from the app bundle.")
+            return []
+        }
+        do {
+            let data = try Data(contentsOf: url)
+            return try JSONDecoder().decode([SightseeingRegion].self, from: data)
+        } catch {
+            assertionFailure("Failed to decode SightseeingRegions.json: \(error)")
+            return []
+        }
+    }
+}
+
 /// The state a CDI displays: which way the needle deflects and the TO/FROM flag.
 struct CDIReading {
     enum Flag { case to, from, off }

@@ -7,6 +7,8 @@ struct MapView: View {
     private let stations: [VORStation] = VORStation.myosia
     // The fixed list of airports loaded once.
     private let airports: [Airport] = Airport.loadFromBundle()
+    // The fixed list of named sightseeing regions loaded once.
+    private let sightseeingRegions: [SightseeingRegion] = SightseeingRegion.myosia
 
     // The plane's current position, in the coordinate space of the map.
     // `nil` until the view lays out, at which point we center the plane.
@@ -44,6 +46,7 @@ struct MapView: View {
     @State private var showAirports: Bool = true
     @State private var showRadials: Bool = true
     @State private var showGrid: Bool = false
+    @State private var showSightseeingRegions: Bool = false
     @State private var gridSizeNM: Double = 50
     // The station whose map details are currently expanded.
     @State private var selectedVORID: String?
@@ -114,7 +117,8 @@ struct MapView: View {
                 MapControlPanel(zoom: $zoom, showVORs: $showVORs,
                                 visibleVORServiceVolumes: $visibleVORServiceVolumes,
                                 showAirports: $showAirports, showRadials: $showRadials,
-                                showGrid: $showGrid, gridSizeNM: $gridSizeNM,
+                                showGrid: $showGrid, showSightseeingRegions: $showSightseeingRegions,
+                                gridSizeNM: $gridSizeNM,
                                 zoomRange: minZoom...maxZoom,
                                 planePosition: Binding(get: { normalizedPlanePosition }, set: { _ in }))
                     .frame(width: controlPanelWidth)
@@ -146,6 +150,15 @@ struct MapView: View {
                                zoom: zoom,
                                pan: pan,
                                mapWidthNM: mapWidthNM)
+            }
+
+            if showSightseeingRegions {
+                SightseeingCheckpointsOverlay(regions: sightseeingRegions,
+                                              imageRect: imageRect,
+                                              mapSize: mapSize,
+                                              zoom: zoom,
+                                              pan: pan,
+                                              mapWidthNM: mapWidthNM)
             }
 
             // Radial lines from tuned stations, drawn beneath the station symbols.
@@ -187,6 +200,20 @@ struct MapView: View {
                     AirportMarkerView(airport: airport)
                         .position(screenPoint(airport.normalizedPosition(in: imageRect), mapSize: mapSize))
                 }
+            }
+
+            // Landmark names stay visible even when checkpoint tolerances are hidden.
+            ForEach(sightseeingRegions) { region in
+                Text(region.name)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+                    .background(.black.opacity(0.62), in: Capsule())
+                    .shadow(color: .black.opacity(0.7), radius: 2)
+                    .position(screenPoint(point(for: region.labelPosition, in: imageRect),
+                                          mapSize: mapSize))
+                    .allowsHitTesting(false)
             }
 
             PlaneIcon(heading: heading)
@@ -331,10 +358,13 @@ struct MapView: View {
 
     /// The screen position of a station within the fitted map image.
     private func point(for station: VORStation, in rect: CGRect) -> CGPoint {
-        CGPoint(
-            x: rect.minX + station.relativePosition.x * rect.width,
-            y: rect.minY + station.relativePosition.y * rect.height
-        )
+        point(for: station.relativePosition, in: rect)
+    }
+
+    /// Converts a normalized map-image coordinate to unscaled map space.
+    private func point(for relativePosition: CGPoint, in rect: CGRect) -> CGPoint {
+        CGPoint(x: rect.minX + relativePosition.x * rect.width,
+                y: rect.minY + relativePosition.y * rect.height)
     }
 
     /// Computes the CDI needle deflection and TO/FROM flag for a radio tuned to
@@ -441,6 +471,7 @@ struct MapControlPanel: View {
     @Binding var showAirports: Bool
     @Binding var showRadials: Bool
     @Binding var showGrid: Bool
+    @Binding var showSightseeingRegions: Bool
     @Binding var gridSizeNM: Double
     let zoomRange: ClosedRange<CGFloat>
 
@@ -495,6 +526,9 @@ struct MapControlPanel: View {
                 }
                 .padding(.leading, 18)
                 Toggle("Airports", isOn: $showAirports)
+                    .toggleStyle(.checkbox)
+                    .foregroundStyle(.white)
+                Toggle("Sightseeing regions", isOn: $showSightseeingRegions)
                     .toggleStyle(.checkbox)
                     .foregroundStyle(.white)
                 Toggle("Radials", isOn: $showRadials)

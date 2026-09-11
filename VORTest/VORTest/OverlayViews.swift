@@ -117,6 +117,66 @@ struct HexGridOverlay: View {
     }
 }
 
+/// Draws checkpoint tolerances for sightseeing regions in the map's coordinate
+/// space. The label layer is separate and remains visible when these circles are hidden.
+struct SightseeingCheckpointsOverlay: View {
+    let regions: [SightseeingRegion]
+    let imageRect: CGRect
+    let mapSize: CGSize
+    let zoom: CGFloat
+    let pan: CGSize
+    let mapWidthNM: Double
+
+    var body: some View {
+        Canvas { context, _ in
+            guard imageRect.width > 0, imageRect.height > 0, mapWidthNM > 0 else { return }
+
+            for region in regions {
+                for checkpoint in region.checkpoints {
+                    let mapPoint = CGPoint(
+                        x: imageRect.minX + checkpoint.relativePosition.x * imageRect.width,
+                        y: imageRect.minY + checkpoint.relativePosition.y * imageRect.height
+                    )
+                    let center = screenPoint(mapPoint)
+                    let radius = CGFloat(checkpoint.toleranceNM / mapWidthNM) * imageRect.width * zoom
+                    guard radius > 0 else { continue }
+
+                    let circleRect = CGRect(x: center.x - radius,
+                                            y: center.y - radius,
+                                            width: radius * 2,
+                                            height: radius * 2)
+                    var circle = Path()
+                    circle.addEllipse(in: circleRect)
+                    context.stroke(
+                        circle,
+                        with: .color(.orange.opacity(0.9)),
+                        style: StrokeStyle(lineWidth: 2, lineJoin: .round, dash: [8, 5])
+                    )
+
+                    var marker = Path()
+                    marker.addEllipse(in: CGRect(x: center.x - 3,
+                                                 y: center.y - 3,
+                                                 width: 6,
+                                                 height: 6))
+                    context.fill(marker, with: .color(.orange))
+                }
+            }
+        }
+        .frame(width: mapSize.width, height: mapSize.height)
+        .allowsHitTesting(false)
+    }
+
+    /// Applies the same camera transform as the map artwork and other overlays.
+    private func screenPoint(_ point: CGPoint) -> CGPoint {
+        let centerX = mapSize.width / 2
+        let centerY = mapSize.height / 2
+        return CGPoint(
+            x: (point.x - centerX) * zoom + centerX + pan.width,
+            y: (point.y - centerY) * zoom + centerY + pan.height
+        )
+    }
+}
+
 /// A radial from a tuned VOR: `origin` is the station's on-screen point and
 /// `courseDegrees` is the selected OBS course (0 = north, clockwise).
 struct Radial: Identifiable {
