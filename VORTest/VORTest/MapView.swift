@@ -30,6 +30,9 @@ struct MapView: View {
     // The maximum angular deviation represented by full-scale CDI deflection.
     @State private var cdiMax: Double = 10
 
+    // Both NAV radios use the same presentation selected in the map panel.
+    @State private var navigationInstrumentStyle: NavigationInstrumentStyle = .cdi
+
     // The plane's magnetic heading (0–360°, 0 = north/up).
     @State private var heading: Double = 0
 
@@ -100,6 +103,8 @@ struct MapView: View {
                             name: "NAV1",
                             ident: $nav1Ident,
                             obs: $nav1OBS,
+                            heading: heading,
+                            instrumentStyle: navigationInstrumentStyle,
                             tunedStation: nav1Station,
                             reading: { obs in cdiReading(station: nav1Station, obs: obs, cdiMax: cdiMax, planePos: planePos, imageRect: imageRect) }
                         )
@@ -107,6 +112,8 @@ struct MapView: View {
                             name: "NAV2",
                             ident: $nav2Ident,
                             obs: $nav2OBS,
+                            heading: heading,
+                            instrumentStyle: navigationInstrumentStyle,
                             tunedStation: nav2Station,
                             reading: { obs in cdiReading(station: nav2Station, obs: obs, cdiMax: cdiMax, planePos: planePos, imageRect: imageRect) }
                         )
@@ -123,6 +130,7 @@ struct MapView: View {
                                 showGrid: $showGrid, showSightseeingRegions: $showSightseeingRegions,
                                 gridSizeNM: $gridSizeNM,
                                 cdiMax: $cdiMax,
+                                navigationInstrumentStyle: $navigationInstrumentStyle,
                                 zoomRange: minZoom...maxZoom,
                                 planePosition: Binding(get: { normalizedPlanePosition }, set: { _ in }))
                     .frame(width: controlPanelWidth)
@@ -479,6 +487,7 @@ struct MapControlPanel: View {
     @Binding var showSightseeingRegions: Bool
     @Binding var gridSizeNM: Double
     @Binding var cdiMax: Double
+    @Binding var navigationInstrumentStyle: NavigationInstrumentStyle
     let zoomRange: ClosedRange<CGFloat>
 
     // Added optional planePosition binding to show normalized plane coordinates
@@ -506,6 +515,19 @@ struct MapControlPanel: View {
             }
 
             CDIMaxField(value: $cdiMax)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Navigation display")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(ControlPalette.primaryText)
+                Picker("Navigation display", selection: $navigationInstrumentStyle) {
+                    ForEach(NavigationInstrumentStyle.allCases) { style in
+                        Text(style.displayName).tag(style)
+                    }
+                }
+                .pickerStyle(.radioGroup)
+                .labelsHidden()
+            }
 
             Divider().overlay(ControlPalette.divider)
 

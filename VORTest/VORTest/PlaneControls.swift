@@ -1,5 +1,19 @@
 import SwiftUI
 
+enum NavigationInstrumentStyle: String, CaseIterable, Identifiable {
+    case cdi
+    case hsi
+
+    var id: Self { self }
+
+    var displayName: String {
+        switch self {
+        case .cdi: return "CDI"
+        case .hsi: return "HSI"
+        }
+    }
+}
+
 enum ControlPalette {
     static let panelBackground = Color(red: 0.88, green: 0.89, blue: 0.91)
     static let cardBackground = Color(red: 0.95, green: 0.96, blue: 0.97)
@@ -245,6 +259,8 @@ struct NavRadioView: View {
     let name: String
     @Binding var ident: String
     @Binding var obs: Double
+    let heading: Double
+    let instrumentStyle: NavigationInstrumentStyle
     /// The beacon the typed identifier resolves to, or `nil` if none matches.
     let tunedStation: VORStation?
     /// Resolves the CDI reading for a given OBS setting.
@@ -301,7 +317,12 @@ struct NavRadioView: View {
                 .frame(width: radioDetailsWidth, alignment: .leading)
 
                 if diameter > 0 {
-                    OBSInstrument(obs: $obs, reading: reading(obs), diameter: diameter)
+                    switch instrumentStyle {
+                    case .cdi:
+                        OBSInstrument(obs: $obs, reading: reading(obs), diameter: diameter)
+                    case .hsi:
+                        HSIInstrument(heading: heading, obs: $obs, reading: reading(obs), diameter: diameter)
+                    }
                 }
             }
             .padding(cardPadding)
@@ -563,6 +584,144 @@ struct OBSInstrument: View {
     }
 
     // MARK: Rotational drag
+
+    private var rotationDrag: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                let center = CGPoint(x: radius, y: radius)
+                let angle = atan2(value.location.y - center.y,
+                                  value.location.x - center.x) * 180 / .pi
+                if let last = lastDragAngle {
+                    var delta = angle - last
+                    if delta > 180 { delta -= 360 }
+                    if delta < -180 { delta += 360 }
+                    var next = (obs + delta).truncatingRemainder(dividingBy: 360)
+                    if next < 0 { next += 360 }
+                    obs = next
+                }
+                lastDragAngle = angle
+            }
+            .onEnded { _ in lastDragAngle = nil }
+    }
+}
+
+/// An HSI combines the plane heading with the selected VOR course. The yellow
+/// course arrow shows the OBS setting. Its smaller companion changes between
+/// the selected course and its reciprocal to show TO versus FROM.
+struct HSIInstrument: View {
+    let heading: Double
+    @Binding var obs: Double
+    let reading: CDIReading
+    var diameter: CGFloat = 178
+
+    @State private var lastDragAngle: Double?
+
+    private var radius: CGFloat { diameter / 2 }
+    private var scale: CGFloat { diameter / 150 }
+    private var relativeCourse: Double { obs - heading }
+    private var fullScaleDeflection: CGFloat { diameter * 0.20 }
+    private var deviationTickSpacing: CGFloat { fullScaleDeflection / 5 }
+    private var coursePointerExtent: CGFloat { radius * 0.60 }
+    private var cdiBarLength: CGFloat { radius * 0.74 }
+    private var coursePointerSegmentLength: CGFloat { coursePointerExtent - cdiBarLength / 2 }
+    private var coursePointerSegmentOffset: CGFloat { (coursePointerExtent + cdiBarLength / 2) / 2 }
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.black)
+                .overlay(Circle().stroke(Color.gray.opacity(0.6), lineWidth: 2 * scale))
+
+            // The heading card rotates under the fixed top index. There is no
+            // centre airplane symbol because the heading at the index supplies
+            // the useful orientation information.
+            CompassCard(radius: radius)
+                .rotationEffect(.degrees(-heading))
+
+            selectedCourseArrow
+
+            if reading.flag == .off {
+                navigationFlag
+            } else {
+                courseDeviation
+                toFromArrow
+            }
+
+            Image(systemName: "arrowtriangle.down.fill")
+                .foregroundStyle(.orange)
+                .font(.system(size: 14 * scale))
+                .offset(y: -radius + 10 * scale)
+        }
+        .frame(width: diameter, height: diameter)
+        .contentShape(Circle())
+        .gesture(rotationDrag)
+    }
+
+    /// The long arrow always points along the OBS course. It has no connection
+    /// to the plane heading, except that the heading card makes their angle
+    /// relative to each other visible.
+    private var selectedCourseArrow: some View {
+        ZStack {
+            Capsule()
+                .fill(.yellow)
+                .frame(width: 3 * scale, height: coursePointerSegmentLength)
+                .offset(y: -coursePointerSegmentOffset)
+            Capsule()
+                .fill(.yellow)
+                .frame(width: 3 * scale, height: coursePointerSegmentLength)
+                .offset(y: coursePointerSegmentOffset)
+            Image(systemName: "arrowtriangle.up.fill")
+                .font(.system(size: 18 * scale, weight: .bold))
+                .foregroundStyle(.yellow)
+                .offset(y: -radius * 0.55)
+        }
+        .rotationEffect(.degrees(relativeCourse))
+    }
+
+    /// The dots are fixed to the selected course. The white bar slides sideways
+    /// across them to show the same lateral CDI deflection as the CDI display.
+    private var courseDeviation: some View {
+        let deflection = min(max(reading.deflection, -1), 1)
+
+        return ZStack {
+            ForEach(-5...5, id: \.self) { index in
+                Circle()
+                    .fill(.white.opacity(index == 0 ? 1 : 0.85))
+                    //.frame(width: 3 * scale, height: 3 * scale)
+                    .frame(width: (index == 0 ? 4 : 3) * scale, height: (index == 0 ? 4 : 3) * scale)
+                    .offset(x: CGFloat(index) * deviationTickSpacing)
+            }
+
+            Capsule()
+                .fill(.white)
+                .frame(width: 3 * scale, height: cdiBarLength)
+                .offset(x: CGFloat(deflection) * fullScaleDeflection)
+                .animation(.easeOut(duration: 0.15), value: reading.deflection)
+        }
+        .rotationEffect(.degrees(relativeCourse))
+    }
+
+    /// A small triangle points toward the VOR on a TO indication and toward the
+    /// reciprocal on a FROM indication. For example, OBS 350° plus FROM makes
+    /// this pointer face 170°, while the large course arrow stays at 350°.
+    private var toFromArrow: some View {
+        let direction = reading.flag == .to ? relativeCourse : relativeCourse + 180
+
+        return Image(systemName: "arrowtriangle.up.fill")
+            .font(.system(size: 13 * scale, weight: .bold))
+            .foregroundStyle(.yellow)
+            .offset(y: -radius * 0.29)
+            .rotationEffect(.degrees(direction))
+    }
+
+    private var navigationFlag: some View {
+        Text("NAV")
+            .font(.system(size: 10 * scale, weight: .heavy))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 3 * scale)
+            .padding(.vertical, scale)
+            .background(.red, in: RoundedRectangle(cornerRadius: 3 * scale))
+    }
 
     private var rotationDrag: some Gesture {
         DragGesture(minimumDistance: 0)
