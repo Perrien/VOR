@@ -23,83 +23,95 @@ struct PlaneControlView: View {
 
     // How fast the turn buttons rotate the plane, in degrees per second.
     private let turnRate: Double = 10
-    private let diameter: CGFloat = 150
-    private var radius: CGFloat { diameter / 2 }
+    private let cardPadding: CGFloat = 12
+    private let contentSpacing: CGFloat = 14
+    private let headingReadoutWidth: CGFloat = 50
+    private let speedControlsWidth: CGFloat = 104
 
     var body: some View {
-        HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("PLANE")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(ControlPalette.accent)
+        GeometryReader { geometry in
+            let diameter = dialDiameter(in: geometry.size)
+            let radius = diameter / 2
+            let turnButtonSize = diameter * (34 / 150)
+            let turnButtonInset = diameter * (6 / 150)
 
-                Text("HDG")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(ControlPalette.accent)
+            HStack(spacing: contentSpacing) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("PLANE")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(ControlPalette.accent)
 
-                Text(String(format: "%03d°", displayHeading))
-                    .font(.title2.monospacedDigit().weight(.medium))
-                    .foregroundStyle(ControlPalette.accent)
-                    .lineLimit(1)
-                    .fixedSize()
+                    Text("HDG")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(ControlPalette.accent)
 
-                Spacer(minLength: 0)
-            }
-
-            ZStack {
-                HeadingIndicator(heading: heading, diameter: diameter)
-
-                // Turn buttons tucked into the lower corners of the dial, echoing
-                // the OBS knob's placement on the NAV instruments.
-                HoldTurnButton(systemImage: "arrow.counterclockwise") { dt in
-                    turn(by: -turnRate * dt)
-                }
-                .offset(x: -radius + 6, y: radius - 6)
-
-                HoldTurnButton(systemImage: "arrow.clockwise") { dt in
-                    turn(by: turnRate * dt)
-                }
-                .offset(x: radius - 6, y: radius - 6)
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("SPEED")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(ControlPalette.secondaryText)
-
-                HStack(spacing: 4) {
-                    TextField("120", text: $speedText)
-                        .textFieldStyle(.plain)
+                    Text(String(format: "%03d°", displayHeading))
                         .font(.title2.monospacedDigit().weight(.medium))
                         .foregroundStyle(ControlPalette.accent)
-                        .frame(width: 62)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 4)
-                        .background(ControlPalette.fieldBackground, in: RoundedRectangle(cornerRadius: 6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(ControlPalette.fieldBorder, lineWidth: 1)
-                        )
+                        .lineLimit(1)
+                        .fixedSize()
 
-                    Text("KTS")
-                        .font(.caption.monospacedDigit())
+                    Spacer(minLength: 0)
+                }
+                .frame(width: headingReadoutWidth, alignment: .leading)
+
+                if diameter > 0 {
+                    ZStack {
+                        HeadingIndicator(heading: heading, diameter: diameter)
+
+                        // Turn buttons tuck into the lower corners of the dial.
+                        HoldTurnButton(systemImage: "arrow.counterclockwise", size: turnButtonSize) { dt in
+                            turn(by: -turnRate * dt)
+                        }
+                        .offset(x: -radius + turnButtonInset, y: radius - turnButtonInset)
+
+                        HoldTurnButton(systemImage: "arrow.clockwise", size: turnButtonSize) { dt in
+                            turn(by: turnRate * dt)
+                        }
+                        .offset(x: radius - turnButtonInset, y: radius - turnButtonInset)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("SPEED")
+                        .font(.system(size: 9, weight: .semibold))
                         .foregroundStyle(ControlPalette.secondaryText)
-                }
 
-                Button {
-                    isFlying.toggle()
-                } label: {
-                    Label(isFlying ? "Pause" : "Play",
-                          systemImage: isFlying ? "pause.fill" : "play.fill")
-                        .frame(minWidth: 82)
+                    HStack(spacing: 4) {
+                        TextField("120", text: $speedText)
+                            .textFieldStyle(.plain)
+                            .font(.title2.monospacedDigit().weight(.medium))
+                            .foregroundStyle(ControlPalette.accent)
+                            .frame(width: 62)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                            .background(ControlPalette.fieldBackground, in: RoundedRectangle(cornerRadius: 6))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(ControlPalette.fieldBorder, lineWidth: 1)
+                            )
+
+                        Text("KTS")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(ControlPalette.secondaryText)
+                    }
+
+                    Button {
+                        isFlying.toggle()
+                    } label: {
+                        Label(isFlying ? "Pause" : "Play",
+                              systemImage: isFlying ? "pause.fill" : "play.fill")
+                            .frame(minWidth: 82)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(isFlying ? .orange : .green)
+                    .keyboardShortcut(.space, modifiers: [])
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(isFlying ? .orange : .green)
-                .keyboardShortcut(.space, modifiers: [])
+                .frame(width: speedControlsWidth, alignment: .leading)
             }
+            .padding(cardPadding)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(ControlPalette.cardBackground, in: RoundedRectangle(cornerRadius: 10))
         .onAppear {
             speedText = formattedSpeed(speedKnots)
@@ -116,6 +128,16 @@ struct PlaneControlView: View {
         .onSubmit {
             speedText = formattedSpeed(speedKnots)
         }
+    }
+
+    /// Uses the smaller of the usable card height and the horizontal room left
+    /// after the heading and speed controls. This lets the dial follow panel
+    /// resizing without overlapping either control column.
+    private func dialDiameter(in cardSize: CGSize) -> CGFloat {
+        let usableHeight = max(0, cardSize.height - cardPadding * 2)
+        let usableWidth = max(0, cardSize.width - cardPadding * 2)
+        let widthForDial = max(0, usableWidth - headingReadoutWidth - speedControlsWidth - contentSpacing * 2)
+        return min(usableHeight, widthForDial)
     }
 
     /// The heading rounded to whole degrees for display (360 instead of 0).
@@ -143,13 +165,14 @@ struct HeadingIndicator: View {
     var diameter: CGFloat = 150
 
     private var radius: CGFloat { diameter / 2 }
+    private var scale: CGFloat { diameter / 150 }
 
     var body: some View {
         ZStack {
             // Bezel.
             Circle()
                 .fill(Color.black)
-                .overlay(Circle().stroke(Color.gray.opacity(0.6), lineWidth: 2))
+                .overlay(Circle().stroke(Color.gray.opacity(0.6), lineWidth: 2 * scale))
 
             // Compass card rotates so the current heading sits under the top index.
             CompassCard(radius: radius)
@@ -158,15 +181,15 @@ struct HeadingIndicator: View {
             // Fixed plane silhouette, always pointing "up" (toward the index).
             // The airplane symbol points east by default, so −90° faces it up.
             Image(systemName: "airplane")
-                .font(.system(size: 26))
+                .font(.system(size: 26 * scale))
                 .foregroundStyle(.yellow)
                 .rotationEffect(.degrees(-90))
 
             // Fixed heading index at the top (the lubber line).
             Image(systemName: "arrowtriangle.down.fill")
                 .foregroundStyle(.yellow)
-                .font(.system(size: 16))
-                .offset(y: -radius + 10)
+                .font(.system(size: 16 * scale))
+                .offset(y: -radius + 10 * scale)
         }
         .frame(width: diameter, height: diameter)
     }
@@ -176,15 +199,16 @@ struct HeadingIndicator: View {
 /// elapsed time (seconds) since the last tick so callers can turn at a steady rate.
 struct HoldTurnButton: View {
     let systemImage: String
+    var size: CGFloat = 34
     let onTick: (Double) -> Void
 
     @State private var task: Task<Void, Never>?
 
     var body: some View {
         Image(systemName: systemImage)
-            .font(.headline.weight(.bold))
+            .font(.system(size: size * 0.5, weight: .bold))
             .foregroundStyle(.white)
-            .frame(width: 34, height: 34)
+            .frame(width: size, height: size)
             .background(Color.orange, in: Circle())
             .overlay(Circle().stroke(.white.opacity(0.5), lineWidth: 1))
             .contentShape(Circle())
@@ -227,53 +251,72 @@ struct NavRadioView: View {
     let reading: (Double) -> CDIReading
 
     private var isTuned: Bool { tunedStation != nil }
+    private let cardPadding: CGFloat = 12
+    private let contentSpacing: CGFloat = 14
+    private let radioDetailsWidth: CGFloat = 104
 
     var body: some View {
-        HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(name)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(ControlPalette.secondaryText)
+        GeometryReader { geometry in
+            let diameter = dialDiameter(in: geometry.size)
 
-                Text("IDENT")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(ControlPalette.secondaryText)
+            HStack(spacing: contentSpacing) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(name)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(ControlPalette.secondaryText)
 
-                TextField("---", text: identText)
-                    .textFieldStyle(.plain)
-                    .autocorrectionDisabled()
-                    .font(.title2.monospaced().weight(.semibold))
-                    .foregroundStyle(ControlPalette.accent)
-                    .frame(width: 88)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(ControlPalette.fieldBackground, in: RoundedRectangle(cornerRadius: 6))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(isTuned ? ControlPalette.accent.opacity(0.7) : ControlPalette.fieldBorder, lineWidth: 1)
-                    )
+                    Text("IDENT")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(ControlPalette.secondaryText)
 
-                Text(tunedStation.map { "\($0.frequencyLabel) MHz" } ?? "--- MHz")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(isTuned ? ControlPalette.accent : ControlPalette.secondaryText)
+                    TextField("---", text: identText)
+                        .textFieldStyle(.plain)
+                        .autocorrectionDisabled()
+                        .font(.title2.monospaced().weight(.semibold))
+                        .foregroundStyle(ControlPalette.accent)
+                        .frame(width: 88)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(ControlPalette.fieldBackground, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(isTuned ? ControlPalette.accent.opacity(0.7) : ControlPalette.fieldBorder, lineWidth: 1)
+                        )
 
-                Label(isTuned ? "Station tuned" : "No station",
-                      systemImage: isTuned ? "dot.radiowaves.left.and.right" : "antenna.radiowaves.left.and.right.slash")
-                    .font(.caption2)
-                    .foregroundStyle(isTuned ? Color(red: 0.00, green: 0.38, blue: 0.48) : ControlPalette.secondaryText)
+                    Text(tunedStation.map { "\($0.frequencyLabel) MHz" } ?? "--- MHz")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(isTuned ? ControlPalette.accent : ControlPalette.secondaryText)
 
-                Text(String(format: "CRS %03d°", displayCourse))
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(ControlPalette.primaryText)
+                    Label(isTuned ? "Station tuned" : "No station",
+                          systemImage: isTuned ? "dot.radiowaves.left.and.right" : "antenna.radiowaves.left.and.right.slash")
+                        .font(.caption2)
+                        .foregroundStyle(isTuned ? Color(red: 0.00, green: 0.38, blue: 0.48) : ControlPalette.secondaryText)
 
-                Spacer(minLength: 0)
+                    Text(String(format: "CRS %03d°", displayCourse))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(ControlPalette.primaryText)
+
+                    Spacer(minLength: 0)
+                }
+                .frame(width: radioDetailsWidth, alignment: .leading)
+
+                if diameter > 0 {
+                    OBSInstrument(obs: $obs, reading: reading(obs), diameter: diameter)
+                }
             }
-
-            OBSInstrument(obs: $obs, reading: reading(obs), diameter: 150)
+            .padding(cardPadding)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(ControlPalette.cardBackground, in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    /// The CDI uses every point of vertical space that its card permits, capped
+    /// by the width remaining after the tuned-station details.
+    private func dialDiameter(in cardSize: CGSize) -> CGFloat {
+        let usableHeight = max(0, cardSize.height - cardPadding * 2)
+        let usableWidth = max(0, cardSize.width - cardPadding * 2)
+        let widthForDial = max(0, usableWidth - radioDetailsWidth - contentSpacing)
+        return min(usableHeight, widthForDial)
     }
 
     /// The OBS course rounded to whole degrees for display (360 instead of 0).
@@ -385,6 +428,7 @@ struct OBSInstrument: View {
     @State private var lastDragAngle: Double?
 
     private var radius: CGFloat { diameter / 2 }
+    private var scale: CGFloat { diameter / 150 }
     /// The outer two CDI reference marks are full-scale deflection. Keeping the
     /// scale and needle tied to this value means the needle ends on a mark.
     private var fullScaleDeflection: CGFloat { diameter * 0.25 }
@@ -398,7 +442,7 @@ struct OBSInstrument: View {
             // Bezel.
             Circle()
                 .fill(Color.black)
-                .overlay(Circle().stroke(Color.gray.opacity(0.6), lineWidth: 2))
+                .overlay(Circle().stroke(Color.gray.opacity(0.6), lineWidth: 2 * scale))
 
             // Rotating compass card.
             CompassCard(radius: radius)
@@ -416,17 +460,17 @@ struct OBSInstrument: View {
             // Fixed course index at the top.
             Image(systemName: "arrowtriangle.down.fill")
                 .foregroundStyle(.yellow)
-                .font(.system(size: 14))
-                .offset(y: -radius + 10)
+                .font(.system(size: 14 * scale))
+                .offset(y: -radius + 10 * scale)
 
             // OBS knob (decorative — the whole dial is draggable).
-            Text("OBS")
-                .font(.system(size: 9, weight: .bold))
+            /*Text("OBS")
+                .font(.system(size: 9 * scale, weight: .bold))
                 .foregroundStyle(.white)
-                .frame(width: 30, height: 30)
+                .frame(width: 30 * scale, height: 30 * scale)
                 .background(Color.gray.opacity(0.4), in: Circle())
-                .overlay(Circle().stroke(.white.opacity(0.5), lineWidth: 1))
-                .offset(x: -radius + 4, y: radius - 4)
+                .overlay(Circle().stroke(.white.opacity(0.5), lineWidth: scale))
+                .offset(x: -radius + 4 * scale, y: radius - 4 * scale)*/
         }
         .frame(width: diameter, height: diameter)
         .contentShape(Circle())
@@ -442,12 +486,12 @@ struct OBSInstrument: View {
             ForEach(-5...5, id: \.self) { index in
                 Capsule()
                     .fill(.white.opacity(index == 0 ? 1 : 0.8))
-                    .frame(width: index == 0 ? 3 : 2,
-                           height: index == 0 ? 12 : 8)
+                    .frame(width: (index == 0 ? 3 : 2) * scale,
+                           height: (index == 0 ? 12 : 8) * scale)
                     .offset(x: CGFloat(index) * cdiTickSpacing)
             }
         }
-        .frame(width: fullScaleDeflection * 2 + 8, height: 14)
+        .frame(width: fullScaleDeflection * 2 + 8 * scale, height: 14 * scale)
     }
 
     /// The white CDI needle moves across the five marks and stops on either
@@ -457,7 +501,7 @@ struct OBSInstrument: View {
 
         return Capsule()
             .fill(.white)
-            .frame(width: 3, height: cdiViewportDiameter)
+            .frame(width: 3 * scale, height: cdiViewportDiameter)
             .offset(x: CGFloat(clampedDeflection) * fullScaleDeflection)
             .animation(.easeOut(duration: 0.15), value: reading.deflection)
     }
@@ -477,7 +521,7 @@ struct OBSInstrument: View {
     private var toFromIndicator: some View {
         let labelX = radius * 0.22
         let labelDistance = radius * 0.42
-        let markerDistance: CGFloat = 14
+        let markerDistance = 14 * scale
 
         return ZStack {
             flagText("TO")
@@ -494,27 +538,27 @@ struct OBSInstrument: View {
 
     private func flagText(_ label: String) -> some View {
         Text(label)
-            .font(.system(size: 10, weight: .bold, design: .monospaced))
+            .font(.system(size: 10 * scale, weight: .bold, design: .monospaced))
             .foregroundStyle(.white.opacity(0.85))
     }
 
     private func flagMarker(systemImage: String, isActive: Bool) -> some View {
         Image(systemName: systemImage)
-            .font(.system(size: 14, weight: .bold))
+            .font(.system(size: 14 * scale, weight: .bold))
             .foregroundStyle(.yellow)
             .opacity(isActive ? 1 : 0)
-            .frame(width: 16, height: 16)
+            .frame(width: 16 * scale, height: 16 * scale)
     }
 
     /// Shown when no valid station is tuned. It occupies the open upper-left
     /// portion of the face, leaving the TO/FR indication clear on the right.
     private var navFlag: some View {
         Text("NAV")
-            .font(.system(size: 10, weight: .heavy))
+            .font(.system(size: 10 * scale, weight: .heavy))
             .foregroundStyle(.white)
-            .padding(.horizontal, 2)
-            .padding(.vertical, 1)
-            .background(.red, in: RoundedRectangle(cornerRadius: 3))
+            .padding(.horizontal, 2 * scale)
+            .padding(.vertical, scale)
+            .background(.red, in: RoundedRectangle(cornerRadius: 3 * scale))
             .offset(x: -radius * 0.30, y: -radius * 0.27)
     }
 
@@ -544,6 +588,8 @@ struct OBSInstrument: View {
 struct CompassCard: View {
     let radius: CGFloat
 
+    private var scale: CGFloat { radius / 75 }
+
     var body: some View {
         ZStack {
             // Tick marks.
@@ -551,17 +597,18 @@ struct CompassCard: View {
                 let isMajor = i % 3 == 0
                 Rectangle()
                     .fill(.white)
-                    .frame(width: isMajor ? 2 : 1, height: isMajor ? 10 : 5)
-                    .offset(y: -radius + 7)
+                    .frame(width: (isMajor ? 2 : 1) * scale,
+                           height: (isMajor ? 10 : 5) * scale)
+                    .offset(y: -radius + 7 * scale)
                     .rotationEffect(.degrees(Double(i) * 10))
             }
 
             // Heading numbers (N, 3, 6, E, 12, 15, S, 21, 24, W, 30, 33).
             ForEach(0..<12, id: \.self) { i in
                 Text(label(for: i))
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 12 * scale, weight: .bold))
                     .foregroundStyle(.white)
-                    .offset(y: -radius + 22)
+                    .offset(y: -radius + 22 * scale)
                     .rotationEffect(.degrees(Double(i) * 30))
             }
         }

@@ -54,7 +54,7 @@ struct MapView: View {
     // The station whose map details are currently expanded.
     @State private var selectedVORID: String?
 
-    private let panelHeight: CGFloat = 250
+    private let panelHeight: CGFloat = 350
     private let controlPanelWidth: CGFloat = 240
     private let minZoom: CGFloat = 1
     private let maxZoom: CGFloat = 6
