@@ -66,28 +66,8 @@ struct PlaneControlView: View {
                         .lineLimit(1)
                         .fixedSize()
 
-                    Spacer(minLength: 0)
-                }
-                .frame(width: headingReadoutWidth, alignment: .leading)
+                    //Spacer(minLength: 0)
 
-                if diameter > 0 {
-                    ZStack {
-                        HeadingIndicator(heading: heading, diameter: diameter)
-
-                        // Turn buttons tuck into the lower corners of the dial.
-                        HoldTurnButton(systemImage: "arrow.counterclockwise", size: turnButtonSize) { dt in
-                            turn(by: -turnRate * dt)
-                        }
-                        .offset(x: -radius + turnButtonInset, y: radius - turnButtonInset)
-
-                        HoldTurnButton(systemImage: "arrow.clockwise", size: turnButtonSize) { dt in
-                            turn(by: turnRate * dt)
-                        }
-                        .offset(x: radius - turnButtonInset, y: radius - turnButtonInset)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
                     Text("SPEED")
                         .font(.system(size: 9, weight: .semibold))
                         .foregroundStyle(ControlPalette.secondaryText)
@@ -123,6 +103,24 @@ struct PlaneControlView: View {
                     .keyboardShortcut(.space, modifiers: [])
                 }
                 .frame(width: speedControlsWidth, alignment: .leading)
+
+                if diameter > 0 {
+                    ZStack {
+                        HeadingIndicator(heading: heading, diameter: diameter)
+
+                        // Turn buttons tuck into the lower corners of the dial.
+                        HoldTurnButton(systemImage: "arrow.counterclockwise", size: turnButtonSize) { dt in
+                            turn(by: -turnRate * dt)
+                        }
+                        .offset(x: -radius + turnButtonInset, y: radius - turnButtonInset)
+
+                        HoldTurnButton(systemImage: "arrow.clockwise", size: turnButtonSize) { dt in
+                            turn(by: turnRate * dt)
+                        }
+                        .offset(x: radius - turnButtonInset, y: radius - turnButtonInset)
+                    }
+                }
+
             }
             .padding(cardPadding)
         }
