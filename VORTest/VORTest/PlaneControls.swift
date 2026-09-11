@@ -25,6 +25,7 @@ enum ControlPalette {
     static let fieldBorder = Color.black.opacity(0.22)
 }
 
+// MARK: - Plane Controls
 /// The plane control panel: a heading indicator flanked by press-and-hold turn
 /// buttons. Holding a button rotates the plane continuously; the readout and the
 /// plane icon on the map both follow `heading`.
@@ -172,6 +173,7 @@ struct PlaneControlView: View {
     }
 }
 
+// MARK: - Heading Indicator
 /// A directional-gyro style heading indicator: a rotating compass card with a
 /// fixed plane silhouette and a top index showing the current heading.
 struct HeadingIndicator: View {
@@ -195,8 +197,8 @@ struct HeadingIndicator: View {
             // Fixed plane silhouette, always pointing "up" (toward the index).
             // The airplane symbol points east by default, so −90° faces it up.
             Image(systemName: "airplane")
-                .font(.system(size: 26 * scale))
-                .foregroundStyle(.yellow)
+                .font(.system(size: 50 * scale))
+                .foregroundStyle(.white)
                 .rotationEffect(.degrees(-90))
 
             // Fixed heading index at the top (the lubber line).
