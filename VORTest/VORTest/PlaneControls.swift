@@ -544,7 +544,7 @@ struct OBSInstrument: View {
 
     private func flagMarker(systemImage: String, isActive: Bool) -> some View {
         Image(systemName: systemImage)
-            .font(.system(size: 14 * scale, weight: .bold))
+            .font(.system(size: 16 * scale, weight: .bold))
             .foregroundStyle(.yellow)
             .opacity(isActive ? 1 : 0)
             .frame(width: 16 * scale, height: 16 * scale)
