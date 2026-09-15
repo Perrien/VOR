@@ -185,6 +185,18 @@ fieldset label { justify-content: start; }
 .instrument-card { padding: 0.85rem 1rem; border-radius: 0.5rem; background: #f7f8f9; }
 .instrument-value { margin: 0.4rem 0; color: #075c41; font: 600 1.25rem ui-monospace, SFMono-Regular, Menlo, monospace; }
 
+.heading-control {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.7rem 0;
+  color: #59646b;
+  font-size: 0.8rem;
+}
+
+.heading-control input { width: 100%; }
+
 @media (max-width: 720px) {
   .app-header { align-items: start; flex-direction: column; }
   .workspace { grid-template-columns: 1fr; }

@@ -14,7 +14,7 @@
           <p class="eyebrow">MYOSIA TRAINING REGION</p>
           <h1>VOR Navigator</h1>
         </div>
-        <p class="step-label">Web port · Step 4: place the aircraft</p>
+        <p class="step-label">Web port · Step 5: set aircraft heading</p>
       </header>
 
       <section class="workspace" aria-label="Navigation training workspace">
@@ -63,18 +63,22 @@
       <section class="instrument-panel" aria-label="Instrument placeholders">
         <article class="instrument-card">
           <p class="card-label">PLANE</p>
-          <p class="instrument-value">HDG 360°</p>
+          <output id="heading-readout" class="instrument-value" for="heading-control">HDG 360°</output>
+          <label class="heading-control" for="heading-control">
+            <span>Heading</span>
+            <input id="heading-control" type="range" min="0" max="359" value="0" />
+          </label>
           <p id="plane-position" class="instrument-note" aria-live="polite">MAP 50.0% east · 50.0% south</p>
         </article>
         <article class="instrument-card">
           <p class="card-label">NAV 1</p>
           <p class="instrument-value">---.---</p>
-          <p class="instrument-note">Radio state arrives in Step 5.</p>
+          <p class="instrument-note">Radio state arrives in Step 6.</p>
         </article>
         <article class="instrument-card">
           <p class="card-label">NAV 2</p>
           <p class="instrument-value">---.---</p>
-          <p class="instrument-note">Radio state arrives in Step 5.</p>
+          <p class="instrument-note">Radio state arrives in Step 6.</p>
         </article>
       </section>
     </main>

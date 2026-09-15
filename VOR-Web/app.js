@@ -3,6 +3,8 @@ const chartImage = document.querySelector("#chart-image");
 const stationLayer = document.querySelector("#station-layer");
 const planeMarker = document.querySelector("#plane-marker");
 const planePositionReadout = document.querySelector("#plane-position");
+const headingControl = document.querySelector("#heading-control");
+const headingReadout = document.querySelector("#heading-readout");
 const selectedStationName = document.querySelector("#selected-station-name");
 const selectedStationIdent = document.querySelector("#selected-station-ident");
 const selectedStationFrequency = document.querySelector("#selected-station-frequency");
@@ -11,6 +13,7 @@ const selectedStationService = document.querySelector("#selected-station-service
 
 let selectedStationId = null;
 let planePosition = { x: 0.5, y: 0.5 };
+let heading = 0;
 
 async function loadStations() {
   const response = await fetch("assets/VORStations.json");
@@ -94,6 +97,14 @@ function positionPlane() {
   planeMarker.style.top = `${mapRect.top + planePosition.y * mapRect.height}px`;
 }
 
+function updateHeading() {
+  heading = Number(headingControl.value);
+  const displayedHeading = heading === 0 ? 360 : heading;
+
+  headingReadout.textContent = `HDG ${String(displayedHeading).padStart(3, "0")}°`;
+  planeMarker.style.transform = `translate(-50%, -50%) rotate(${heading}deg)`;
+}
+
 function movePlaneToClick(event) {
   const panelRect = chartPanel.getBoundingClientRect();
   const mapRect = fittedMapRect();
@@ -122,7 +133,9 @@ async function start() {
     addStationMarkers(stations);
     positionStationMarkers();
     positionPlane();
+    updateHeading();
     chartPanel.addEventListener("click", movePlaneToClick);
+    headingControl.addEventListener("input", updateHeading);
     window.addEventListener("resize", () => {
       positionStationMarkers();
       positionPlane();
