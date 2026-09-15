@@ -1,0 +1,124 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #e1e4e7;
+  color: #1f2529;
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; }
+
+.app-shell {
+  min-height: 100vh;
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.app-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 1500px;
+  margin: 0 auto 1rem;
+}
+
+h1, h2, p { margin: 0; }
+
+h1 { font-size: clamp(1.6rem, 3vw, 2.25rem); letter-spacing: -0.04em; }
+h2 { font-size: 1rem; }
+
+.eyebrow, .card-label {
+  color: #075c41;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+}
+
+.step-label, .panel-intro, .instrument-note, .chart-caption {
+  color: #59646b;
+  font-size: 0.85rem;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  max-width: 1500px;
+  margin: auto;
+  min-height: min(68vh, 760px);
+  background: #a9c9d4;
+  box-shadow: 0 12px 32px #27323a2b;
+}
+
+.chart-panel { position: relative; min-height: 420px; overflow: hidden; }
+
+.chart-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.chart-caption {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 999px;
+  color: white;
+  background: #172229b8;
+}
+
+.control-panel {
+  padding: 1.25rem;
+  background: #f0f2f4;
+  border-left: 1px solid #bbc2c7;
+}
+
+.control-panel h2 { margin-bottom: 0.6rem; }
+.panel-intro { line-height: 1.4; margin-bottom: 1.5rem; }
+
+.control-row, fieldset label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+input { accent-color: #087052; }
+input:disabled { opacity: 0.72; }
+
+fieldset {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.5rem 0 0;
+  padding: 1rem 0 0;
+  border: 0;
+  border-top: 1px solid #cbd0d4;
+}
+
+legend { padding: 0; margin-bottom: 0.75rem; font-size: 0.8rem; font-weight: 700; }
+fieldset label { justify-content: start; }
+
+.instrument-panel {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 1rem;
+  background: #d6dade;
+}
+
+.instrument-card { padding: 0.85rem 1rem; border-radius: 0.5rem; background: #f7f8f9; }
+.instrument-value { margin: 0.4rem 0; color: #075c41; font: 600 1.25rem ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+@media (max-width: 720px) {
+  .app-header { align-items: start; flex-direction: column; }
+  .workspace { grid-template-columns: 1fr; }
+  .control-panel { border-top: 1px solid #bbc2c7; border-left: 0; }
+  .chart-panel { min-height: 0; }
+  .chart-image { aspect-ratio: 1748 / 1254; }
+  .instrument-panel { grid-template-columns: 1fr; }
+}

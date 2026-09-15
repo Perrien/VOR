@@ -1,0 +1,275 @@
+[
+    {
+        "name": "Great Plains International",
+        "icao": "GPGP",
+        "size": "large",
+        "x": 0.1184,
+        "y": 0.3744
+    },
+    {
+        "name": "Riverbend Regional",
+        "icao": "GPRA",
+        "size": "large",
+        "x": 0.4029,
+        "y": 0.3261
+    },
+    {
+        "name": "Westport Gateway",
+        "icao": "GPWP",
+        "size": "large",
+        "x": 0.8262,
+        "y": 0.5198
+    },
+    {
+        "name": "Midland Cityport",
+        "icao": "GPMC",
+        "size": "large",
+        "x": 0.5067,
+        "y": 0.6889
+    },
+    {
+        "name": "Harrowfield Municipal",
+        "icao": "GPHF",
+        "size": "small",
+        "x": 0.1998,
+        "y": 0.3166
+    },
+    {
+        "name": "Stonehaven Airfield",
+        "icao": "GPSH",
+        "size": "small",
+        "x": 0.50,
+        "y": 0.19
+    },
+    {
+        "name": "Coldmere Strip",
+        "icao": "GPCM",
+        "size": "small",
+        "x": 0.725,
+        "y": 0.2225
+    },
+    {
+        "name": "Duskwall Airfield",
+        "icao": "GPDW",
+        "size": "small",
+        "x": 0.3470,
+        "y": 0.3129
+    },
+    {
+        "name": "Thornbury Strip",
+        "icao": "GPTB",
+        "size": "small",
+        "x": 0.58,
+        "y": 0.29
+    },
+    {
+        "name": "Grasmere Airfield",
+        "icao": "GPGM",
+        "size": "small",
+        "x": 0.8621,
+        "y": 0.3318
+    },
+    {
+        "name": "Millford Junction",
+        "icao": "GPML",
+        "size": "small",
+        "x": 0.73,
+        "y": 0.26
+    },
+    {
+        "name": "Ashwick Flats",
+        "icao": "GPAW",
+        "size": "small",
+        "x": 0.38,
+        "y": 0.48
+    },
+    {
+        "name": "Ironvale Airfield",
+        "icao": "GPIV",
+        "size": "small",
+        "x": 0.63,
+        "y": 0.46
+    },
+    {
+        "name": "Redcliff Strip",
+        "icao": "GPRC",
+        "size": "small",
+        "x": 0.76,
+        "y": 0.60
+    },
+    {
+        "name": "Marshview Airfield",
+        "icao": "GPMV",
+        "size": "small",
+        "x": 0.18,
+        "y": 0.63
+    },
+    {
+        "name": "Gorton Fields",
+        "icao": "GPGF",
+        "size": "small",
+        "x": 0.35,
+        "y": 0.73
+    },
+    {
+        "name": "Clearwater Strip",
+        "icao": "GPCW",
+        "size": "small",
+        "x": 0.6037,
+        "y": 0.6865
+    },
+    {
+        "name": "Ironford Municipal",
+        "icao": "GPIM",
+        "size": "small",
+        "x": 0.7552,
+        "y": 0.6533
+    },
+    {
+        "name": "Brackdale Airfield",
+        "icao": "GPBD",
+        "size": "small",
+        "x": 0.8344,
+        "y": 0.4841
+    },
+    {
+        "name": "Thistledown Airfield",
+        "icao": "GPTH",
+        "size": "small",
+        "x": 0.2063,
+        "y": 0.3963
+    },
+    {
+        "name": "Fernhaven Strip",
+        "icao": "GPFN",
+        "size": "small",
+        "x": 0.2862,
+        "y": 0.44
+    },
+    {
+        "name": "Whitecliff Airfield",
+        "icao": "GPWC",
+        "size": "small",
+        "x": 0.395,
+        "y": 0.23
+    },
+    {
+        "name": "Avermere Strip",
+        "icao": "GPAV",
+        "size": "small",
+        "x": 0.64,
+        "y": 0.21
+    },
+    {
+        "name": "Caldervale Strip",
+        "icao": "GPCV",
+        "size": "small",
+        "x": 0.83,
+        "y": 0.27
+    },
+    {
+        "name": "Westering Airfield",
+        "icao": "GPWT",
+        "size": "small",
+        "x": 0.1874,
+        "y": 0.4887
+    },
+    {
+        "name": "Dunmoor Strip",
+        "icao": "GPDM",
+        "size": "small",
+        "x": 0.26,
+        "y": 0.37
+    },
+    {
+        "name": "Hollowtree Airfield",
+        "icao": "GPHL",
+        "size": "small",
+        "x": 0.47,
+        "y": 0.36
+    },
+    {
+        "name": "Kettleford Strip",
+        "icao": "GPKF",
+        "size": "small",
+        "x": 0.66,
+        "y": 0.37
+    },
+    {
+        "name": "Ravensmere Airfield",
+        "icao": "GPRV",
+        "size": "small",
+        "x": 0.82,
+        "y": 0.39
+    },
+    {
+        "name": "Blackwater Airfield",
+        "icao": "GPBK",
+        "size": "small",
+        "x": 0.14,
+        "y": 0.53
+    },
+    {
+        "name": "Willowmere Strip",
+        "icao": "GPWL",
+        "size": "small",
+        "x": 0.28,
+        "y": 0.56
+    },
+    {
+        "name": "Greyford Airfield",
+        "icao": "GPGY",
+        "size": "small",
+        "x": 0.47,
+        "y": 0.54
+    },
+    {
+        "name": "Southpine Strip",
+        "icao": "GPSP",
+        "size": "small",
+        "x": 0.66,
+        "y": 0.55
+    },
+    {
+        "name": "Vanerock Strip",
+        "icao": "GPVR",
+        "size": "small",
+        "x": 0.78,
+        "y": 0.55
+    },
+    {
+        "name": "Oldbrook Airfield",
+        "icao": "GPOB",
+        "size": "small",
+        "x": 0.23,
+        "y": 0.67
+    },
+    {
+        "name": "Silverkeep Strip",
+        "icao": "GPSK",
+        "size": "small",
+        "x": 0.34,
+        "y": 0.60
+    },
+    {
+        "name": "Highdale Airfield",
+        "icao": "GPHD",
+        "size": "small",
+        "x": 0.45,
+        "y": 0.74
+    },
+    {
+        "name": "Crestmoor Strip",
+        "icao": "GPCR",
+        "size": "small",
+        "x": 0.68,
+        "y": 0.62
+    },
+    {
+        "name": "Farpoint Airfield",
+        "icao": "GPFP",
+        "size": "small",
+        "x": 0.73,
+        "y": 0.49
+    }
+]

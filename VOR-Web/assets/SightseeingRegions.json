@@ -1,0 +1,106 @@
+[
+    {
+        "id": "greyhook-bay",
+        "name": "Greyhook Bay",
+        "type": "bay",
+        "label": { "x": 0.32, "y": 0.35 },
+        "checkpoints": [
+            { "id": "bay-center", "x": 0.32, "y": 0.35, "toleranceNM": 10 }
+        ]
+    },
+    {
+        "id": "glassmere-lake",
+        "name": "Glassmere Lake",
+        "type": "lake",
+        "label": { "x": 0.235, "y": 0.53 },
+        "checkpoints": [
+            { "id": "lake-center", "x": 0.235, "y": 0.53, "toleranceNM": 10 }
+        ]
+    },
+    {
+        "id": "frostgate-inlet",
+        "name": "Frostgate Inlet",
+        "type": "inlet",
+        "label": { "x": 0.476, "y": 0.249 },
+        "checkpoints": [
+            { "id": "west-end", "x": 0.447, "y": 0.235, "toleranceNM": 8 },
+            { "id": "east-end", "x": 0.525, "y": 0.294, "toleranceNM": 4 }
+        ]
+    },
+    {
+        "id": "foxhook-cove",
+        "name": "Foxhook Cove",
+        "type": "cove",
+        "label": { "x": 0.8, "y": 0.28 },
+        "checkpoints": [
+            { "id": "cove-center", "x": 0.8, "y": 0.28, "toleranceNM": 4 }
+        ]
+    },
+    {
+        "id": "sunbreak-bay",
+        "name": "Sunbreak Bay",
+        "type": "bay",
+        "label": { "x": 0.826, "y": 0.435 },
+        "checkpoints": [
+            { "id": "bay-center", "x": 0.826, "y": 0.435, "toleranceNM": 10 }
+        ]
+    },
+    {
+        "id": "goldback-mountain",
+        "name": "Goldback Mountain",
+        "type": "mountain",
+        "label": { "x": 0.57, "y": 0.49 },
+        "checkpoints": [
+            { "id": "goldback-east", "x": 0.6, "y": 0.505, "toleranceNM": 10 },
+            { "id": "goldback-west", "x": 0.56, "y": 0.48, "toleranceNM": 10 }
+        ]
+    },
+    {
+        "id": "ironcrown-peak",
+        "name": "Ironcrown Peak",
+        "type": "peak",
+        "label": { "x": 0.718, "y": 0.448 },
+        "checkpoints": [
+            { "id": "peak-view", "x": 0.71, "y": 0.45, "toleranceNM": 10 }
+        ]
+    },
+    {
+        "id": "heron-cove",
+        "name": "Heron Cove",
+        "type": "cove",
+        "label": { "x": 0.455, "y": 0.679 },
+        "checkpoints": [
+            { "id": "cove-mouth", "x": 0.427, "y": 0.685, "toleranceNM": 4 },
+            { "id": "cove-end", "x": 0.478, "y": 0.654, "toleranceNM": 3 }
+        ]
+    },
+    {
+        "id": "crownwater-beach",
+        "name": "Crownwater Beach",
+        "type": "beach",
+        "label": { "x": 0.563, "y": 0.631 },
+        "checkpoints": [
+            { "id": "beach-east", "x": 0.581, "y": 0.628, "toleranceNM": 2 },
+            { "id": "beach-west", "x": 0.545, "y": 0.626, "toleranceNM": 2 }
+        ]
+    },
+    {
+        "id": "saltwind-cove",
+        "name": "Saltwind Cove",
+        "type": "cove",
+        "label": { "x": 0.613, "y": 0.65 },
+        "checkpoints": [
+            { "id": "cove-mouth", "x": 0.613, "y": 0.65, "toleranceNM": 4 },
+            { "id": "cove-end", "x": 0.633, "y": 0.629, "toleranceNM": 3 }
+        ]
+    },
+    {
+        "id": "greywind-isle",
+        "name": "Greywind Isle",
+        "type": "island",
+        "label": { "x": 0.345, "y": 0.750 },
+        "checkpoints": [
+            { "id": "north-shore", "x": 0.35, "y": 0.73, "toleranceNM": 8 }
+        ]
+    }
+]

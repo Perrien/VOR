@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A browser-based VOR navigation learning project." />
+    <title>VOR Navigator</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">MYOSIA TRAINING REGION</p>
+          <h1>VOR Navigator</h1>
+        </div>
+        <p class="step-label">Web port · Step 1: static layout</p>
+      </header>
+
+      <section class="workspace" aria-label="Navigation training workspace">
+        <section class="chart-panel" aria-label="Myosia regional chart">
+          <img
+            class="chart-image"
+            src="assets/MyosiaMap.png"
+            alt="Illustrated regional chart of the fictional continent Myosia"
+          />
+          <div class="chart-caption">Regional chart · 500 NM east to west</div>
+        </section>
+
+        <aside class="control-panel">
+          <h2>Chart Controls</h2>
+          <p class="panel-intro">These controls are visual placeholders for now. We will make them work in later steps.</p>
+
+          <label class="control-row" for="zoom">
+            <span>Zoom</span>
+            <input id="zoom" type="range" min="1" max="6" value="1" disabled />
+          </label>
+
+          <fieldset>
+            <legend>Layers</legend>
+            <label><input type="checkbox" checked disabled /> VOR stations</label>
+            <label><input type="checkbox" checked disabled /> Airports</label>
+            <label><input type="checkbox" checked disabled /> Radials</label>
+            <label><input type="checkbox" disabled /> Grid</label>
+          </fieldset>
+        </aside>
+      </section>
+
+      <section class="instrument-panel" aria-label="Instrument placeholders">
+        <article class="instrument-card">
+          <p class="card-label">PLANE</p>
+          <p class="instrument-value">HDG 360°</p>
+          <p class="instrument-note">Flight controls arrive in Step 6.</p>
+        </article>
+        <article class="instrument-card">
+          <p class="card-label">NAV 1</p>
+          <p class="instrument-value">---.---</p>
+          <p class="instrument-note">Radio state arrives in Step 5.</p>
+        </article>
+        <article class="instrument-card">
+          <p class="card-label">NAV 2</p>
+          <p class="instrument-value">---.---</p>
+          <p class="instrument-note">Radio state arrives in Step 5.</p>
+        </article>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
