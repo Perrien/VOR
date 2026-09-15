@@ -50,7 +50,7 @@ h2 { font-size: 1rem; }
   box-shadow: 0 12px 32px #27323a2b;
 }
 
-.chart-panel { position: relative; min-height: 420px; overflow: hidden; }
+.chart-panel { position: relative; min-height: 420px; overflow: hidden; cursor: crosshair; }
 
 .chart-image {
   display: block;
@@ -103,6 +103,19 @@ h2 { font-size: 1rem; }
   border-radius: 0.25rem;
 }
 
+.plane-marker {
+  position: absolute;
+  z-index: 2;
+  width: 0px;
+  height: 0;
+  border-bottom: 0.85rem solid #d14632;
+  border-right: 0.48rem solid transparent;
+  border-left: 0.48rem solid transparent;
+  filter: drop-shadow(0 1px 2px #17222999);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
 .chart-caption {
   position: absolute;
   left: 1rem;
@@ -111,6 +124,7 @@ h2 { font-size: 1rem; }
   border-radius: 999px;
   color: white;
   background: #172229b8;
+  pointer-events: none;
 }
 
 .control-panel {

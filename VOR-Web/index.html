@@ -14,7 +14,7 @@
           <p class="eyebrow">MYOSIA TRAINING REGION</p>
           <h1>VOR Navigator</h1>
         </div>
-        <p class="step-label">Web port · Step 3: selectable VOR stations</p>
+        <p class="step-label">Web port · Step 4: place the aircraft</p>
       </header>
 
       <section class="workspace" aria-label="Navigation training workspace">
@@ -26,6 +26,7 @@
             alt="Illustrated regional chart of the fictional continent Myosia"
           />
           <div id="station-layer" class="station-layer" role="group" aria-label="VOR stations on the chart"></div>
+          <div id="plane-marker" class="plane-marker" aria-hidden="true"></div>
           <div class="chart-caption">Regional chart · 500 NM east to west</div>
         </section>
 
@@ -63,7 +64,7 @@
         <article class="instrument-card">
           <p class="card-label">PLANE</p>
           <p class="instrument-value">HDG 360°</p>
-          <p class="instrument-note">Flight controls arrive in Step 6.</p>
+          <p id="plane-position" class="instrument-note" aria-live="polite">MAP 50.0% east · 50.0% south</p>
         </article>
         <article class="instrument-card">
           <p class="card-label">NAV 1</p>

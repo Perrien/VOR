@@ -1,6 +1,8 @@
 const chartPanel = document.querySelector(".chart-panel");
 const chartImage = document.querySelector("#chart-image");
 const stationLayer = document.querySelector("#station-layer");
+const planeMarker = document.querySelector("#plane-marker");
+const planePositionReadout = document.querySelector("#plane-position");
 const selectedStationName = document.querySelector("#selected-station-name");
 const selectedStationIdent = document.querySelector("#selected-station-ident");
 const selectedStationFrequency = document.querySelector("#selected-station-frequency");
@@ -8,6 +10,7 @@ const selectedStationType = document.querySelector("#selected-station-type");
 const selectedStationService = document.querySelector("#selected-station-service");
 
 let selectedStationId = null;
+let planePosition = { x: 0.5, y: 0.5 };
 
 async function loadStations() {
   const response = await fetch("assets/VORStations.json");
@@ -40,7 +43,10 @@ function addStationMarkers(stations) {
     label.textContent = station.identifier;
 
     marker.append(symbol, label);
-    marker.addEventListener("click", () => selectStation(station));
+    marker.addEventListener("click", (event) => {
+      event.stopPropagation();
+      selectStation(station);
+    });
     stationLayer.append(marker);
   }
 }
@@ -82,12 +88,45 @@ function positionStationMarkers() {
   }
 }
 
+function positionPlane() {
+  const mapRect = fittedMapRect();
+  planeMarker.style.left = `${mapRect.left + planePosition.x * mapRect.width}px`;
+  planeMarker.style.top = `${mapRect.top + planePosition.y * mapRect.height}px`;
+}
+
+function movePlaneToClick(event) {
+  const panelRect = chartPanel.getBoundingClientRect();
+  const mapRect = fittedMapRect();
+  const clickX = event.clientX - panelRect.left;
+  const clickY = event.clientY - panelRect.top;
+
+  const isInsideMap = clickX >= mapRect.left
+    && clickX <= mapRect.left + mapRect.width
+    && clickY >= mapRect.top
+    && clickY <= mapRect.top + mapRect.height;
+
+  if (!isInsideMap) return;
+
+  planePosition = {
+    x: (clickX - mapRect.left) / mapRect.width,
+    y: (clickY - mapRect.top) / mapRect.height,
+  };
+
+  positionPlane();
+  planePositionReadout.textContent = `MAP ${(planePosition.x * 100).toFixed(1)}% east · ${(planePosition.y * 100).toFixed(1)}% south`;
+}
+
 async function start() {
   try {
     const stations = await loadStations();
     addStationMarkers(stations);
     positionStationMarkers();
-    window.addEventListener("resize", positionStationMarkers);
+    positionPlane();
+    chartPanel.addEventListener("click", movePlaneToClick);
+    window.addEventListener("resize", () => {
+      positionStationMarkers();
+      positionPlane();
+    });
   } catch (error) {
     console.error(error);
     stationLayer.textContent = "Unable to load VOR stations.";
