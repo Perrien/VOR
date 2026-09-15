@@ -16,9 +16,15 @@ const selectedStationService = document.querySelector("#selected-station-service
 const tuneNav1Button = document.querySelector("#tune-nav1");
 const nav1Frequency = document.querySelector("#nav1-frequency");
 const nav1Status = document.querySelector("#nav1-status");
+const nav1ObsControl = document.querySelector("#nav1-obs-control");
+const nav1ObsReadout = document.querySelector("#nav1-obs-readout");
+const nav1CdiNeedle = document.querySelector("#nav1-cdi-needle");
+const nav1Flag = document.querySelector("#nav1-flag");
+const nav1Radial = document.querySelector("#nav1-radial");
 
 let selectedStationId = null;
 let nav1StationId = null;
+let nav1Obs = 0;
 let planePosition = { x: 0.5, y: 0.5 };
 let heading = 0;
 let speedKnots = 120;
@@ -94,6 +100,60 @@ function tuneNav1() {
   nav1StationId = station.id;
   nav1Frequency.textContent = station.frequency.toFixed(2);
   nav1Status.textContent = `${station.identifier} · ${station.name}`;
+  nav1ObsControl.disabled = false;
+  updateNav1Instrument();
+}
+
+function normalize180(angle) {
+  let result = angle % 360;
+  if (result > 180) result -= 360;
+  if (result < -180) result += 360;
+  return result;
+}
+
+function calculateNav1Reading(station) {
+  const eastNM = (planePosition.x - station.location.x) * MAP_WIDTH_NM;
+  const southNM = (planePosition.y - station.location.y) * MAP_HEIGHT_NM;
+  const distanceNM = Math.hypot(eastNM, southNM);
+  const rangeNM = station.serviceVolume === "H" ? 100 : station.serviceVolume === "L" ? 40 : 25;
+
+  if (distanceNM < 0.1 || distanceNM > rangeNM) return null;
+
+  let radial = Math.atan2(eastNM, -southNM) * 180 / Math.PI;
+  if (radial < 0) radial += 360;
+
+  const difference = normalize180(radial - nav1Obs);
+  const flag = Math.abs(difference) <= 90 ? "FROM" : "TO";
+  const deviationDegrees = flag === "FROM" ? Math.abs(difference) : 180 - Math.abs(difference);
+  const planeIsRightOfCourse = eastNM * Math.cos(nav1Obs * Math.PI / 180)
+    + southNM * Math.sin(nav1Obs * Math.PI / 180) > 0;
+  const deflection = (planeIsRightOfCourse ? -1 : 1) * Math.min(deviationDegrees, 10) / 10;
+
+  return { radial, flag, deflection };
+}
+
+function updateNav1Instrument() {
+  const displayedObs = nav1Obs === 0 ? 360 : nav1Obs;
+  nav1ObsReadout.textContent = `${String(displayedObs).padStart(3, "0")}°`;
+
+  const station = stationsById.get(nav1StationId);
+  const reading = station && calculateNav1Reading(station);
+
+  if (!reading) {
+    nav1Flag.textContent = "OFF";
+    nav1Radial.textContent = station ? "No usable VOR signal" : "Radial —";
+    nav1CdiNeedle.style.left = "50%";
+    return;
+  }
+
+  nav1Flag.textContent = reading.flag;
+  nav1Radial.textContent = `Radial ${String(Math.round(reading.radial)).padStart(3, "0")}°`;
+  nav1CdiNeedle.style.left = `${50 + reading.deflection * 45}%`;
+}
+
+function updateNav1Obs() {
+  nav1Obs = Number(nav1ObsControl.value);
+  updateNav1Instrument();
 }
 
 function fittedMapRect() {
@@ -123,6 +183,11 @@ function positionPlane() {
   const mapRect = fittedMapRect();
   planeMarker.style.left = `${mapRect.left + planePosition.x * mapRect.width}px`;
   planeMarker.style.top = `${mapRect.top + planePosition.y * mapRect.height}px`;
+}
+
+function updatePlanePositionReadout() {
+  planePositionReadout.textContent = `MAP ${(planePosition.x * 100).toFixed(1)}% east · ${(planePosition.y * 100).toFixed(1)}% south`;
+  updateNav1Instrument();
 }
 
 function updateHeading() {
@@ -162,7 +227,7 @@ function advanceFlight(realSeconds) {
 
   planePosition = clampedPosition;
   positionPlane();
-  planePositionReadout.textContent = `MAP ${(planePosition.x * 100).toFixed(1)}% east · ${(planePosition.y * 100).toFixed(1)}% south`;
+  updatePlanePositionReadout();
 
   if (reachedMapEdge) {
     isFlying = false;
@@ -208,7 +273,7 @@ function movePlaneToClick(event) {
   };
 
   positionPlane();
-  planePositionReadout.textContent = `MAP ${(planePosition.x * 100).toFixed(1)}% east · ${(planePosition.y * 100).toFixed(1)}% south`;
+  updatePlanePositionReadout();
 }
 
 async function start() {
@@ -225,6 +290,7 @@ async function start() {
     speedControl.addEventListener("change", updateSpeed);
     flightToggle.addEventListener("click", toggleFlight);
     tuneNav1Button.addEventListener("click", tuneNav1);
+    nav1ObsControl.addEventListener("input", updateNav1Obs);
     window.addEventListener("resize", () => {
       positionStationMarkers();
       positionPlane();

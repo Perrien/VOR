@@ -336,18 +336,11 @@ struct MapView: View {
         zoom = min(max(zoom * factor, minZoom), maxZoom)
     }
 
-    /// The station whose identifier matches `ident` (case-insensitive), if any.
-    private func station(forIdent ident: String) -> VORStation? {
-        let key = ident.trimmingCharacters(in: .whitespaces).uppercased()
-        guard !key.isEmpty else { return nil }
-        return stations.first { $0.ident == key }
-    }
-
     /// The station the radio can currently receive. The identifier remains in
     /// the radio while out of range, so reception returns as soon as the plane
     /// crosses back into the station's service volume.
     private func receivedStation(forIdent ident: String, planePos: CGPoint, imageRect: CGRect) -> VORStation? {
-        guard let station = station(forIdent: ident) else { return nil }
+        guard let station = VORNavigation.station(withIdent: ident, in: stations) else { return nil }
         let stationPoint = point(for: station, in: imageRect)
         let distance = distanceNM(from: planePos, to: stationPoint, imageRect: imageRect)
         return distance <= station.serviceVolume.rangeNM ? station : nil
@@ -357,10 +350,7 @@ struct MapView: View {
     /// 500 NM width. Both points are unscaled map coordinates, so zoom does not
     /// change the simulated distance.
     private func distanceNM(from planePoint: CGPoint, to stationPoint: CGPoint, imageRect: CGRect) -> Double {
-        guard imageRect.width > 0 else { return .infinity }
-        let pixelsPerNM = self.pixelsPerNM(in: imageRect)
-        return hypot(Double(planePoint.x - stationPoint.x),
-                     Double(planePoint.y - stationPoint.y)) / Double(pixelsPerNM)
+        VORNavigation.distanceNM(from: planePoint, to: stationPoint, pixelsPerNM: pixelsPerNM(in: imageRect))
     }
 
     /// Converts a station's service volume into an unscaled map-space radius.
@@ -384,31 +374,9 @@ struct MapView: View {
     private func cdiReading(station: VORStation?, obs: Double, cdiMax: Double,
                             planePos: CGPoint, imageRect: CGRect) -> CDIReading {
         guard let station else { return .off }
-
         let stationPoint = point(for: station, in: imageRect)
-        // Vector from station to plane (screen space: +x east, +y south).
-        let vx = planePos.x - stationPoint.x
-        let vy = planePos.y - stationPoint.y
-
-        // The radial the plane is on = bearing FROM the station (0° = north/up).
-        var radial = atan2(vx, -vy) * 180 / .pi
-        if radial < 0 { radial += 360 }
-
-        // Difference between the plane's radial and the selected course.
-        let diff = normalize180(radial - obs)
-        let flag: CDIReading.Flag = abs(diff) <= 90 ? .from : .to
-
-        // Angular deviation from the selected course line (0–90°), full scale at cdiMax.
-        let deviationAngle = flag == .from ? abs(diff) : 180 - abs(diff)
-
-        // Which side of the course line the plane sits on decides needle direction:
-        // plane to the right of course → course is to the left → needle deflects left.
-        let obsRad = obs * .pi / 180
-        let planeIsRightOfCourse = (vx * cos(obsRad) + vy * sin(obsRad)) > 0
-        let sign: Double = planeIsRightOfCourse ? -1 : 1
-
-        let deflection = sign * min(deviationAngle, cdiMax) / cdiMax
-        return CDIReading(deflection: deflection, flag: flag)
+        return VORNavigation.cdiReading(planePosition: planePos, stationPosition: stationPoint,
+                                        obs: obs, cdiMax: cdiMax)
     }
 }
 
@@ -448,30 +416,11 @@ private struct FlightTimerView: View {
     }
 
     private func advancePlane(by elapsed: TimeInterval) {
-        guard pixelsPerNM > 0 else { return }
-
-        let distanceNM = max(0, speedKnots) * elapsed / 3_600
-        let radians = heading * .pi / 180
         let currentPosition = planePosition ?? initialPosition
-        let distanceInPoints = CGFloat(distanceNM) * pixelsPerNM
-        let proposed = CGPoint(
-            x: currentPosition.x + sin(radians) * distanceInPoints,
-            y: currentPosition.y - cos(radians) * distanceInPoints
-        )
-
-        planePosition = CGPoint(
-            x: min(max(proposed.x, 0), mapSize.width),
-            y: min(max(proposed.y, 0), mapSize.height)
-        )
+        planePosition = FlightPhysics.advance(position: currentPosition, heading: heading,
+                                              speedKnots: speedKnots, elapsed: elapsed,
+                                              pixelsPerNM: pixelsPerNM, bounds: mapSize)
     }
-}
-
-/// Wraps an angle to the range −180…180.
-private func normalize180(_ angle: Double) -> Double {
-    var result = angle.truncatingRemainder(dividingBy: 360)
-    if result > 180 { result -= 360 }
-    if result < -180 { result += 360 }
-    return result
 }
 
 // MARK: - Map control panel

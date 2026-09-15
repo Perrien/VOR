@@ -14,7 +14,7 @@
           <p class="eyebrow">MYOSIA TRAINING REGION</p>
           <h1>VOR Navigator</h1>
         </div>
-        <p class="step-label">Web port · Step 7: tune NAV 1</p>
+        <p class="step-label">Web port · Step 8: NAV 1 CDI</p>
       </header>
 
       <section class="workspace" aria-label="Navigation training workspace">
@@ -82,6 +82,17 @@
           <p class="card-label">NAV 1</p>
           <p id="nav1-frequency" class="instrument-value">---.---</p>
           <p id="nav1-status" class="instrument-note" aria-live="polite">Select a VOR, then tune NAV 1.</p>
+          <label class="obs-control" for="nav1-obs-control">
+            <span>OBS</span>
+            <output id="nav1-obs-readout" for="nav1-obs-control">360°</output>
+            <input id="nav1-obs-control" type="range" min="0" max="359" value="0" disabled />
+          </label>
+          <div class="cdi-row">
+            <span>CDI</span>
+            <div class="cdi-track" aria-hidden="true"><span id="nav1-cdi-needle" class="cdi-needle"></span></div>
+            <output id="nav1-flag">OFF</output>
+          </div>
+          <p id="nav1-radial" class="instrument-note">Radial —</p>
         </article>
         <article class="instrument-card">
           <p class="card-label">NAV 2</p>

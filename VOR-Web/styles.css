@@ -214,6 +214,51 @@ fieldset label { justify-content: start; }
 
 .heading-control input { width: 100%; }
 
+.obs-control {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.7rem 0;
+  color: #59646b;
+  font-size: 0.8rem;
+}
+
+.obs-control output { color: #075c41; font: 650 0.85rem ui-monospace, SFMono-Regular, Menlo, monospace; }
+.obs-control input { width: 100%; }
+
+.cdi-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.7rem 0 0.4rem;
+  color: #59646b;
+  font-size: 0.8rem;
+}
+
+.cdi-track {
+  position: relative;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: repeating-linear-gradient(to right, #bdc5ca 0 2px, transparent 2px 20%);
+  box-shadow: inset 0 0 0 1px #bdc5ca;
+}
+
+.cdi-needle {
+  position: absolute;
+  top: -0.32rem;
+  left: 50%;
+  width: 0.2rem;
+  height: 1.2rem;
+  border-radius: 999px;
+  background: #172229;
+  transform: translateX(-50%);
+  transition: left 120ms ease-out;
+}
+
+.cdi-row output { color: #075c41; font: 700 0.75rem ui-monospace, SFMono-Regular, Menlo, monospace; }
+
 .speed-control {
   display: grid;
   grid-template-columns: auto 1fr auto;
