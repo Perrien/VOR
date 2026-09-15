@@ -149,6 +149,23 @@ h2 { font-size: 1rem; }
 .station-details dt { color: #59646b; font-size: 0.8rem; }
 .station-details dd { margin: 0; font: 600 0.8rem ui-monospace, SFMono-Regular, Menlo, monospace; }
 
+.tune-button {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #087052;
+  border-radius: 0.3rem;
+  color: #075c41;
+  background: transparent;
+  font: 650 0.85rem inherit;
+  cursor: pointer;
+}
+
+.tune-button:hover { color: white; background: #087052; }
+.tune-button:focus-visible { outline: 3px solid #172229; outline-offset: 2px; }
+.tune-button:disabled { color: #899297; border-color: #b5bec4; cursor: not-allowed; }
+.tune-button:disabled:hover { color: #899297; background: transparent; }
+
 .control-row, fieldset label {
   display: flex;
   align-items: center;
@@ -183,7 +200,7 @@ fieldset label { justify-content: start; }
 }
 
 .instrument-card { padding: 0.85rem 1rem; border-radius: 0.5rem; background: #f7f8f9; }
-.instrument-value { margin: 0.4rem 0; color: #075c41; font: 600 1.25rem ui-monospace, SFMono-Regular, Menlo, monospace; }
+.instrument-value { display: block; margin: 0.4rem 0; color: #075c41; font: 600 1.25rem ui-monospace, SFMono-Regular, Menlo, monospace; }
 
 .heading-control {
   display: grid;
@@ -196,6 +213,39 @@ fieldset label { justify-content: start; }
 }
 
 .heading-control input { width: 100%; }
+
+.speed-control {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.7rem 0;
+  color: #59646b;
+  font-size: 0.8rem;
+}
+
+.speed-control input {
+  min-width: 0;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid #b5bec4;
+  border-radius: 0.3rem;
+  font: 600 0.85rem ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.flight-toggle {
+  width: 100%;
+  margin: 0.25rem 0 0.7rem;
+  padding: 0.45rem 0.75rem;
+  border: 0;
+  border-radius: 0.3rem;
+  color: white;
+  background: #087052;
+  font: 650 0.85rem inherit;
+  cursor: pointer;
+}
+
+.flight-toggle:hover { background: #075c41; }
+.flight-toggle:focus-visible { outline: 3px solid #172229; outline-offset: 2px; }
 
 @media (max-width: 720px) {
   .app-header { align-items: start; flex-direction: column; }

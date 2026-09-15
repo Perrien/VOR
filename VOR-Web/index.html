@@ -14,7 +14,7 @@
           <p class="eyebrow">MYOSIA TRAINING REGION</p>
           <h1>VOR Navigator</h1>
         </div>
-        <p class="step-label">Web port · Step 5: set aircraft heading</p>
+        <p class="step-label">Web port · Step 7: tune NAV 1</p>
       </header>
 
       <section class="workspace" aria-label="Navigation training workspace">
@@ -40,6 +40,7 @@
               <div><dt>Type</dt><dd id="selected-station-type">—</dd></div>
               <div><dt>Service</dt><dd id="selected-station-service">—</dd></div>
             </dl>
+            <button id="tune-nav1" class="tune-button" type="button" disabled>Tune NAV 1</button>
           </section>
 
           <h2>Chart Controls</h2>
@@ -68,17 +69,24 @@
             <span>Heading</span>
             <input id="heading-control" type="range" min="0" max="359" value="0" />
           </label>
+          <label class="speed-control" for="speed-control">
+            <span>Speed</span>
+            <input id="speed-control" type="number" min="0" max="300" step="5" value="120" />
+            <span>KTS</span>
+          </label>
+          <button id="flight-toggle" class="flight-toggle" type="button">Start flight</button>
           <p id="plane-position" class="instrument-note" aria-live="polite">MAP 50.0% east · 50.0% south</p>
+          <p id="flight-status" class="instrument-note">Paused · training time 60×</p>
         </article>
         <article class="instrument-card">
           <p class="card-label">NAV 1</p>
-          <p class="instrument-value">---.---</p>
-          <p class="instrument-note">Radio state arrives in Step 6.</p>
+          <p id="nav1-frequency" class="instrument-value">---.---</p>
+          <p id="nav1-status" class="instrument-note" aria-live="polite">Select a VOR, then tune NAV 1.</p>
         </article>
         <article class="instrument-card">
           <p class="card-label">NAV 2</p>
           <p class="instrument-value">---.---</p>
-          <p class="instrument-note">Radio state arrives in Step 6.</p>
+          <p class="instrument-note">Radio state arrives in a later step.</p>
         </article>
       </section>
     </main>
