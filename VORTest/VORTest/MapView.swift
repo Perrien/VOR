@@ -57,12 +57,20 @@ struct MapView: View {
     // The station whose map details are currently expanded.
     @State private var selectedVORID: String?
 
+    // The "find your position" challenge: inactive, waiting for a guess
+    // against a hidden target, or revealed with a scored result.
+    @State private var positionChallenge: PositionChallenge.State = .inactive
+
     private let panelHeight: CGFloat = 350
     private let controlPanelWidth: CGFloat = 240
     private let minZoom: CGFloat = 1
     private let maxZoom: CGFloat = 6
     /// The source map is authored at 500 NM across.
     private let mapWidthNM: Double = 500
+    /// The map's real-world height, derived from the artwork's own aspect
+    /// ratio so north-south distances use the same NM-per-pixel scale as
+    /// east-west ones (see `VORNavigation.distanceNM(fromNormalized:...)`).
+    private var mapHeightNM: Double { mapWidthNM / Double(FlatMap.mapAspect) }
     private let compassRoseMinZoom: CGFloat = 2
 
     var body: some View {
@@ -83,11 +91,15 @@ struct MapView: View {
                 guard (0...1).contains(x), (0...1).contains(y) else { return nil }
                 return CGPoint(x: x, y: y)
             }()
+            // NAV reception/CDI/radials measure against the hidden challenge
+            // target while one is active, so dragging the guess marker never
+            // moves the needle — only against the live plane otherwise.
+            let referencePos = referencePosition(planePos: planePos, imageRect: imageRect)
             let nav1Station = receivedStation(forIdent: nav1Ident,
-                                              planePos: planePos,
+                                              planePos: referencePos,
                                               imageRect: imageRect)
             let nav2Station = receivedStation(forIdent: nav2Ident,
-                                              planePos: planePos,
+                                              planePos: referencePos,
                                               imageRect: imageRect)
 
             HStack(spacing: 0) {
@@ -97,7 +109,8 @@ struct MapView: View {
                     HStack(spacing: 16) {
                         PlaneControlView(heading: $heading,
                                          speedKnots: $speedKnots,
-                                         isFlying: $isFlying)
+                                         isFlying: $isFlying,
+                                         isChallengeActive: isChallengeActive)
 
                         NavRadioView(
                             name: "NAV1",
@@ -106,7 +119,7 @@ struct MapView: View {
                             heading: heading,
                             instrumentStyle: navigationInstrumentStyle,
                             tunedStation: nav1Station,
-                            reading: { obs in cdiReading(station: nav1Station, obs: obs, cdiMax: cdiMax, planePos: planePos, imageRect: imageRect) }
+                            reading: { obs in cdiReading(station: nav1Station, obs: obs, cdiMax: cdiMax, planePos: referencePos, imageRect: imageRect) }
                         )
                         NavRadioView(
                             name: "NAV2",
@@ -115,7 +128,7 @@ struct MapView: View {
                             heading: heading,
                             instrumentStyle: navigationInstrumentStyle,
                             tunedStation: nav2Station,
-                            reading: { obs in cdiReading(station: nav2Station, obs: obs, cdiMax: cdiMax, planePos: planePos, imageRect: imageRect) }
+                            reading: { obs in cdiReading(station: nav2Station, obs: obs, cdiMax: cdiMax, planePos: referencePos, imageRect: imageRect) }
                         )
                     }
                     .padding(16)
@@ -132,7 +145,11 @@ struct MapView: View {
                                 cdiMax: $cdiMax,
                                 navigationInstrumentStyle: $navigationInstrumentStyle,
                                 zoomRange: minZoom...maxZoom,
-                                planePosition: Binding(get: { normalizedPlanePosition }, set: { _ in }))
+                                planePosition: Binding(get: { normalizedPlanePosition }, set: { _ in }),
+                                positionChallenge: positionChallenge,
+                                onStartChallenge: startChallenge,
+                                onCheckPlacement: { checkPlacement(imageRect: imageRect) },
+                                onNewChallenge: startChallenge)
                     .frame(width: controlPanelWidth)
             }
             // Re-clamp the pan whenever the zoom changes (e.g. via the slider) so
@@ -174,8 +191,11 @@ struct MapView: View {
             }
 
             // Radial lines from tuned stations, drawn beneath the station symbols.
+            // These measure against the challenge target (not the live plane)
+            // while a challenge is active, matching the NAV radios above.
             if showRadials {
-                RadialsOverlay(radials: tunedRadials(planePos: planePos, imageRect: imageRect, mapSize: mapSize),
+                let radialsReferencePos = referencePosition(planePos: planePos, imageRect: imageRect)
+                RadialsOverlay(radials: tunedRadials(planePos: radialsReferencePos, imageRect: imageRect, mapSize: mapSize),
                                length: max(mapSize.width, mapSize.height) * 3)
                     .allowsHitTesting(false)
             }
@@ -240,6 +260,16 @@ struct MapView: View {
                             initialPosition: planePos,
                             mapSize: mapSize,
                             pixelsPerNM: pixelsPerNM(in: imageRect))
+
+            // Once checked, show the hidden target and how far the guess was.
+            // `result.guess`/`result.target` are already in map space.
+            if case .revealed(let result) = positionChallenge {
+                PositionChallengeOverlay(
+                    guessPoint: screenPoint(result.guess, mapSize: mapSize),
+                    targetPoint: screenPoint(result.target, mapSize: mapSize)
+                )
+                .allowsHitTesting(false)
+            }
         }
         .frame(width: mapSize.width, height: mapSize.height)
         .clipped()
@@ -334,6 +364,51 @@ struct MapView: View {
     private func applyZoomDelta(_ deltaY: CGFloat, mapSize: CGSize) {
         let factor = 1 + deltaY * 0.08
         zoom = min(max(zoom * factor, minZoom), maxZoom)
+    }
+
+    // MARK: - Position challenge
+
+    private var isChallengeActive: Bool {
+        if case .active = positionChallenge { return true }
+        return false
+    }
+
+    /// The position NAV reception, CDI, and radials should measure against:
+    /// the hidden target while a challenge is active or revealed (so dragging
+    /// the guess marker never moves the needle), otherwise the live plane.
+    private func referencePosition(planePos: CGPoint, imageRect: CGRect) -> CGPoint {
+        switch positionChallenge {
+        case .inactive:
+            return planePos
+        case .active(let target):
+            return point(for: target, in: imageRect)
+        case .revealed(let result):
+            return result.target
+        }
+    }
+
+    /// Starts a new challenge: hides a fresh random target reachable by at
+    /// least 3 VORs (so the player has enough radials to fix a position, not
+    /// just one line), resets the guess marker (the plane) to the map
+    /// center, and stops any animated flight so it can't fight with manual
+    /// guess placement.
+    private func startChallenge() {
+        let target = PositionChallenge.randomTarget(stations: stations, mapWidthNM: mapWidthNM,
+                                                     mapHeightNM: mapHeightNM, minInRangeStations: 3)
+        positionChallenge = .active(target: target)
+        planePosition = nil
+        isFlying = false
+    }
+
+    /// Scores the current guess (wherever the plane marker has been dragged)
+    /// against the hidden target and reveals the result.
+    private func checkPlacement(imageRect: CGRect) {
+        guard case .active(let target) = positionChallenge else { return }
+        let guessPoint = planePosition ?? CGPoint(x: imageRect.midX, y: imageRect.midY)
+        let targetPoint = point(for: target, in: imageRect)
+        let result = PositionChallenge.score(guess: guessPoint, target: targetPoint,
+                                             pixelsPerNM: pixelsPerNM(in: imageRect))
+        positionChallenge = .revealed(result)
     }
 
     /// The station the radio can currently receive. The identifier remains in
@@ -441,6 +516,12 @@ struct MapControlPanel: View {
 
     // Added optional planePosition binding to show normalized plane coordinates
     var planePosition: Binding<CGPoint?>?
+
+    var positionChallenge: PositionChallenge.State = .inactive
+    var onStartChallenge: () -> Void = {}
+    var onCheckPlacement: () -> Void = {}
+    var onNewChallenge: () -> Void = {}
+
     @State private var gridSizeText: String = ""
 
     var body: some View {
@@ -477,6 +558,13 @@ struct MapControlPanel: View {
                 .pickerStyle(.radioGroup)
                 .labelsHidden()
             }
+
+            Divider().overlay(ControlPalette.divider)
+
+            PositionChallengePanel(state: positionChallenge,
+                                   onStart: onStartChallenge,
+                                   onCheck: onCheckPlacement,
+                                   onReset: onNewChallenge)
 
             Divider().overlay(ControlPalette.divider)
 

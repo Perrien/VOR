@@ -12,8 +12,11 @@ struct FlatMap: View {
     /// The ocean fill shown around the letterboxed map (SVG ocean base #a9c9d4).
     static let oceanColor = Color(red: 169 / 255, green: 201 / 255, blue: 212 / 255)
 
-    // Native pixel dimensions of the source map artwork.
-    private static let mapAspect: CGFloat = 1748.0 / 1254.0
+    // Native pixel dimensions of the source map artwork. Not private: it's
+    // the single source of truth for the artwork's aspect ratio, also needed
+    // to convert normalized map-image coordinates to nautical miles without
+    // any screen geometry (see `MapView.mapHeightNM`).
+    static let mapAspect: CGFloat = 1748.0 / 1254.0
 
     /// Aspect-fits the map artwork within `area`, centered.
     static func fittedRect(in area: CGSize) -> CGRect {
@@ -214,6 +217,33 @@ struct RadialsOverlay: View {
                 context.stroke(reciprocal, with: .color(.red),
                                style: StrokeStyle(lineWidth: 1, dash: [6, 4]))
             }
+        }
+    }
+}
+
+/// Reveals the hidden target once a position challenge has been checked, with
+/// a dashed connector back to the guess (which coincides with the plane
+/// icon's own position). Both points are already in screen space.
+struct PositionChallengeOverlay: View {
+    let guessPoint: CGPoint
+    let targetPoint: CGPoint
+
+    private let markerSize: CGFloat = 16
+
+    var body: some View {
+        Canvas { context, _ in
+            var line = Path()
+            line.move(to: guessPoint)
+            line.addLine(to: targetPoint)
+            context.stroke(line, with: .color(.orange.opacity(0.9)),
+                           style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+
+            var cross = Path()
+            cross.move(to: CGPoint(x: targetPoint.x - markerSize / 2, y: targetPoint.y))
+            cross.addLine(to: CGPoint(x: targetPoint.x + markerSize / 2, y: targetPoint.y))
+            cross.move(to: CGPoint(x: targetPoint.x, y: targetPoint.y - markerSize / 2))
+            cross.addLine(to: CGPoint(x: targetPoint.x, y: targetPoint.y + markerSize / 2))
+            context.stroke(cross, with: .color(.red), lineWidth: 3)
         }
     }
 }

@@ -34,6 +34,10 @@ struct PlaneControlView: View {
     @Binding var speedKnots: Double
     @Binding var isFlying: Bool
 
+    // Disables the Play/Pause button so an active position challenge's
+    // guess placement can't be disturbed by an animated flight.
+    var isChallengeActive: Bool = false
+
     @State private var speedText: String = ""
 
     // How fast the turn buttons rotate the plane, in degrees per second.
@@ -101,6 +105,7 @@ struct PlaneControlView: View {
                     .buttonStyle(.borderedProminent)
                     .tint(isFlying ? .orange : .green)
                     .keyboardShortcut(.space, modifiers: [])
+                    .disabled(isChallengeActive)
                 }
                 .frame(width: speedControlsWidth, alignment: .leading)
 
@@ -355,6 +360,49 @@ struct NavRadioView: View {
         )
     }
 
+}
+
+/// The "find your position" challenge status and controls, shown in the map
+/// sidebar: start a challenge, check a placed guess, or start a new one.
+struct PositionChallengePanel: View {
+    let state: PositionChallenge.State
+    let onStart: () -> Void
+    let onCheck: () -> Void
+    let onReset: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Position Challenge")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(ControlPalette.primaryText)
+
+            switch state {
+            case .inactive:
+                Text("Tune in-range VORs, dial OBS until the needles center, then drag the plane to your fix.")
+                    .font(.caption2)
+                    .foregroundStyle(ControlPalette.secondaryText)
+                Button("Start Challenge", action: onStart)
+                    .buttonStyle(.borderedProminent)
+                    .tint(ControlPalette.accent)
+
+            case .active:
+                Text("Drag the plane to where you think you are.")
+                    .font(.caption2)
+                    .foregroundStyle(ControlPalette.secondaryText)
+                Button("Check Placement", action: onCheck)
+                    .buttonStyle(.borderedProminent)
+                    .tint(ControlPalette.accent)
+
+            case .revealed(let result):
+                Text(String(format: "Off by %.1f NM", result.errorNM))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(ControlPalette.accent)
+                Button("New Challenge", action: onReset)
+                    .buttonStyle(.borderedProminent)
+                    .tint(ControlPalette.accent)
+            }
+        }
+    }
 }
 
 /// Edits the angular deviation represented by full-scale CDI deflection.

@@ -58,4 +58,15 @@ enum VORNavigation {
         guard !key.isEmpty else { return nil }
         return stations.first { $0.ident == key }
     }
+
+    /// Distance in nautical miles between two normalized map-image points
+    /// (0...1, same convention as `VORStation.location`), given the chart's
+    /// real-world width and height. Unlike `distanceNM(from:to:pixelsPerNM:)`
+    /// this needs no screen geometry, so it works before any view has laid out.
+    static func distanceNM(fromNormalized a: CGPoint, toNormalized b: CGPoint,
+                           mapWidthNM: Double, mapHeightNM: Double) -> Double {
+        let eastNM = Double(a.x - b.x) * mapWidthNM
+        let southNM = Double(a.y - b.y) * mapHeightNM
+        return hypot(eastNM, southNM)
+    }
 }
