@@ -14,20 +14,33 @@
           <p class="eyebrow">MYOSIA TRAINING REGION</p>
           <h1>VOR Navigator</h1>
         </div>
-        <p class="step-label">Web port · Step 1: static layout</p>
+        <p class="step-label">Web port · Step 3: selectable VOR stations</p>
       </header>
 
       <section class="workspace" aria-label="Navigation training workspace">
         <section class="chart-panel" aria-label="Myosia regional chart">
           <img
+            id="chart-image"
             class="chart-image"
             src="assets/MyosiaMap.png"
             alt="Illustrated regional chart of the fictional continent Myosia"
           />
+          <div id="station-layer" class="station-layer" role="group" aria-label="VOR stations on the chart"></div>
           <div class="chart-caption">Regional chart · 500 NM east to west</div>
         </section>
 
         <aside class="control-panel">
+          <section class="selected-station" aria-labelledby="selected-station-heading">
+            <h2 id="selected-station-heading">Selected VOR</h2>
+            <p id="selected-station-name" class="selected-station-name" aria-live="polite">Choose a marker on the chart.</p>
+            <dl class="station-details">
+              <div><dt>Ident</dt><dd id="selected-station-ident">—</dd></div>
+              <div><dt>Frequency</dt><dd id="selected-station-frequency">—</dd></div>
+              <div><dt>Type</dt><dd id="selected-station-type">—</dd></div>
+              <div><dt>Service</dt><dd id="selected-station-service">—</dd></div>
+            </dl>
+          </section>
+
           <h2>Chart Controls</h2>
           <p class="panel-intro">These controls are visual placeholders for now. We will make them work in later steps.</p>
 
