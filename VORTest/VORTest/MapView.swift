@@ -40,6 +40,10 @@ struct MapView: View {
     @State private var speedKnots: Double = 120
     @State private var isFlying: Bool = false
 
+    // Simulated-time playback multiplier: speeds up the plane's movement on
+    // the map without changing the displayed airspeed.
+    @State private var timeMultiplier: Double = 1
+
     // Map camera: zoom factor and pan offset (in screen points, applied to the
     // scaled map content). `panStart` snapshots the offset when a pan begins.
     @State private var zoom: CGFloat = 1
@@ -110,6 +114,7 @@ struct MapView: View {
                         PlaneControlView(heading: $heading,
                                          speedKnots: $speedKnots,
                                          isFlying: $isFlying,
+                                         timeMultiplier: $timeMultiplier,
                                          isChallengeActive: isChallengeActive)
 
                         NavRadioView(
@@ -257,6 +262,7 @@ struct MapView: View {
                             heading: $heading,
                             speedKnots: $speedKnots,
                             isFlying: $isFlying,
+                            timeMultiplier: $timeMultiplier,
                             initialPosition: planePos,
                             mapSize: mapSize,
                             pixelsPerNM: pixelsPerNM(in: imageRect))
@@ -462,6 +468,7 @@ private struct FlightTimerView: View {
     @Binding var heading: Double
     @Binding var speedKnots: Double
     @Binding var isFlying: Bool
+    @Binding var timeMultiplier: Double
 
     let initialPosition: CGPoint
     let mapSize: CGSize
@@ -493,7 +500,7 @@ private struct FlightTimerView: View {
     private func advancePlane(by elapsed: TimeInterval) {
         let currentPosition = planePosition ?? initialPosition
         planePosition = FlightPhysics.advance(position: currentPosition, heading: heading,
-                                              speedKnots: speedKnots, elapsed: elapsed,
+                                              speedKnots: speedKnots, elapsed: elapsed * timeMultiplier,
                                               pixelsPerNM: pixelsPerNM, bounds: mapSize)
     }
 }

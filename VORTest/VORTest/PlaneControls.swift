@@ -34,9 +34,16 @@ struct PlaneControlView: View {
     @Binding var speedKnots: Double
     @Binding var isFlying: Bool
 
+    // Simulated-time playback multiplier: speeds up the plane's movement on
+    // the map without changing the displayed airspeed. Realistic airspeeds
+    // barely move the plane in real time otherwise.
+    @Binding var timeMultiplier: Double
+
     // Disables the Play/Pause button so an active position challenge's
     // guess placement can't be disturbed by an animated flight.
     var isChallengeActive: Bool = false
+
+    private static let timeMultiplierOptions: [Double] = [1, 5, 10, 30]
 
     @State private var speedText: String = ""
 
@@ -54,77 +61,95 @@ struct PlaneControlView: View {
             let turnButtonSize = diameter * (34 / 150)
             let turnButtonInset = diameter * (6 / 150)
 
-            HStack(spacing: contentSpacing) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("PLANE")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(ControlPalette.accent)
+            VStack(spacing: 10) {
+                HStack(spacing: contentSpacing) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("PLANE")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(ControlPalette.accent)
 
-                    Text("HDG")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(ControlPalette.accent)
+                        Text("HDG")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(ControlPalette.accent)
 
-                    Text(String(format: "%03d°", displayHeading))
-                        .font(.title2.monospacedDigit().weight(.medium))
-                        .foregroundStyle(ControlPalette.accent)
-                        .lineLimit(1)
-                        .fixedSize()
-
-                    //Spacer(minLength: 0)
-
-                    Text("SPEED")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(ControlPalette.secondaryText)
-
-                    HStack(spacing: 4) {
-                        TextField("120", text: $speedText)
-                            .textFieldStyle(.plain)
+                        Text(String(format: "%03d°", displayHeading))
                             .font(.title2.monospacedDigit().weight(.medium))
                             .foregroundStyle(ControlPalette.accent)
-                            .frame(width: 62)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 4)
-                            .background(ControlPalette.fieldBackground, in: RoundedRectangle(cornerRadius: 6))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .stroke(ControlPalette.fieldBorder, lineWidth: 1)
-                            )
+                            .lineLimit(1)
+                            .fixedSize()
 
-                        Text("KTS")
-                            .font(.caption.monospacedDigit())
+                        //Spacer(minLength: 0)
+
+                        Text("SPEED")
+                            .font(.system(size: 9, weight: .semibold))
                             .foregroundStyle(ControlPalette.secondaryText)
-                    }
 
-                    Button {
-                        isFlying.toggle()
-                    } label: {
-                        Label(isFlying ? "Pause" : "Play",
-                              systemImage: isFlying ? "pause.fill" : "play.fill")
-                            .frame(minWidth: 82)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(isFlying ? .orange : .green)
-                    .keyboardShortcut(.space, modifiers: [])
-                    .disabled(isChallengeActive)
-                }
-                .frame(width: speedControlsWidth, alignment: .leading)
+                        HStack(spacing: 4) {
+                            TextField("120", text: $speedText)
+                                .textFieldStyle(.plain)
+                                .font(.title2.monospacedDigit().weight(.medium))
+                                .foregroundStyle(ControlPalette.accent)
+                                .frame(width: 62)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 4)
+                                .background(ControlPalette.fieldBackground, in: RoundedRectangle(cornerRadius: 6))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(ControlPalette.fieldBorder, lineWidth: 1)
+                                )
 
-                if diameter > 0 {
-                    ZStack {
-                        HeadingIndicator(heading: heading, diameter: diameter)
-
-                        // Turn buttons tuck into the lower corners of the dial.
-                        HoldTurnButton(systemImage: "arrow.counterclockwise", size: turnButtonSize) { dt in
-                            turn(by: -turnRate * dt)
+                            Text("KTS")
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(ControlPalette.secondaryText)
                         }
-                        .offset(x: -radius + turnButtonInset, y: radius - turnButtonInset)
 
-                        HoldTurnButton(systemImage: "arrow.clockwise", size: turnButtonSize) { dt in
-                            turn(by: turnRate * dt)
+                        Button {
+                            isFlying.toggle()
+                        } label: {
+                            Label(isFlying ? "Pause" : "Play",
+                                  systemImage: isFlying ? "pause.fill" : "play.fill")
+                                .frame(minWidth: 82)
                         }
-                        .offset(x: radius - turnButtonInset, y: radius - turnButtonInset)
+                        .buttonStyle(.borderedProminent)
+                        .tint(isFlying ? .orange : .green)
+                        .keyboardShortcut(.space, modifiers: [])
+                        .disabled(isChallengeActive)
+                        
+                        Spacer()
+
+                        Text("PLAYBACK")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(ControlPalette.secondaryText)
+
+                        Picker("Playback speed", selection: $timeMultiplier) {
+                            ForEach(Self.timeMultiplierOptions, id: \.self) { multiplier in
+                                Text("\(Int(multiplier))×").tag(multiplier)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+                        .frame(width: speedControlsWidth, alignment: .leading)
+                    }
+                    .frame(width: speedControlsWidth, alignment: .leading)
+
+                    if diameter > 0 {
+                        ZStack {
+                            HeadingIndicator(heading: heading, diameter: diameter)
+
+                            // Turn buttons tuck into the lower corners of the dial.
+                            HoldTurnButton(systemImage: "arrow.counterclockwise", size: turnButtonSize) { dt in
+                                turn(by: -turnRate * dt)
+                            }
+                            .offset(x: -radius + turnButtonInset, y: radius - turnButtonInset)
+
+                            HoldTurnButton(systemImage: "arrow.clockwise", size: turnButtonSize) { dt in
+                                turn(by: turnRate * dt)
+                            }
+                            .offset(x: radius - turnButtonInset, y: radius - turnButtonInset)
+                        }
                     }
                 }
+
 
             }
             .padding(cardPadding)
